@@ -9,6 +9,7 @@ import torch.nn as nn
 import ast
 import torch.optim as optim
 import pandas as pd
+import subprocess
 import copy
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -16,7 +17,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # 获得matbench的数据集
 mb = MatbenchBenchmark(autoload=False)
 # 打开其中的一个任务
-task = MatbenchTask("matbench_phonons")
+task = MatbenchTask("matbench_jdft2d")
 fold_number = 0
 train_data_matbench = task.get_train_and_val_data(fold_number)
 X, y = train_data_matbench
@@ -141,43 +142,54 @@ print("Max Distance:", max_distance)
 print("Min Distance:", min_distance)
 
 # 距离bond expansion处理
-# class BondExpansionRBF(nn.Module):
-#     def __init__(self, num_features: int = 10, gamma: float = 1.0):
-#         super(BondExpansionRBF, self).__init__()
-#         self.num_features = num_features
-#         self.gamma = gamma
-
-#     def forward(self, bond_dist: torch.Tensor) -> torch.Tensor:
-#         # 确保 bond_dist 张量位于 cuda:0 设备上
-#         bond_dist = bond_dist.to(device)
-
-#         # 生成特征中心张量并确保位于 cuda:0 设备上
-#         feature_centers = torch.arange(1, self.num_features + 1).float().to(device) * 0.7
-
-#         # 计算每个距离到各个特征中心的欧几里得距离
-#         distance_to_centers = torch.abs(feature_centers - bond_dist.unsqueeze(-1))
-
-#         # 使用高斯径向基函数计算每个距离对应的特征值
-#         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
-
-#         return rbf_values
-    
 class BondExpansionRBF(nn.Module):
-    def __init__(self, num_features: int = 10, gamma: float = 1.0, min_distance: float = 0.0, max_distance: float = 10.0):
+    def __init__(self, num_features: int = 10, gamma: float = 1.0):
         super(BondExpansionRBF, self).__init__()
         self.num_features = num_features
-        self.gamma = nn.Parameter(torch.tensor(gamma))
-        self.min_distance = min_distance
-        self.max_distance = max_distance
-        self.feature_centers = nn.Parameter(torch.linspace(min_distance, max_distance, num_features))  # 线性分布的特征中心
-        # self.feature_centers = nn.Parameter(torch.arange(1, self.num_features + 1).float() * 0.7)
+        self.gamma = gamma
 
     def forward(self, bond_dist: torch.Tensor) -> torch.Tensor:
+        # 确保 bond_dist 张量位于 cuda:0 设备上
         bond_dist = bond_dist.to(device)
-        distance_to_centers = torch.abs(self.feature_centers - bond_dist.unsqueeze(-1))
-        rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
-        return rbf_values
 
+        # 生成特征中心张量并确保位于 cuda:0 设备上
+        feature_centers = torch.arange(1, self.num_features + 1).float().to(device) * 0.7
+
+        # 计算每个距离到各个特征中心的欧几里得距离
+        distance_to_centers = torch.abs(feature_centers - bond_dist.unsqueeze(-1))
+
+        # 使用高斯径向基函数计算每个距离对应的特征值
+        rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
+
+        return rbf_values
+    
+# class BondExpansionRBF(nn.Module):
+#     def __init__(self, num_features: int = 10, gamma: float = 1.0, min_distance: float = 0.0, max_distance: float = 10.0):
+#         super(BondExpansionRBF, self).__init__()
+#         self.num_features = num_features
+#         self.gamma = nn.Parameter(torch.tensor(gamma))
+#         self.min_distance = min_distance
+#         self.max_distance = max_distance
+#         self.feature_centers = nn.Parameter(torch.linspace(min_distance, max_distance, num_features))  # 线性分布的特征中心
+#         # self.feature_centers = nn.Parameter(torch.arange(1, self.num_features + 1).float() * 0.7)
+
+#     def forward(self, bond_dist: torch.Tensor) -> torch.Tensor:
+#         bond_dist = bond_dist.to(device)
+#         distance_to_centers = torch.abs(self.feature_centers - bond_dist.unsqueeze(-1))
+#         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
+#         return rbf_values
+
+class GRU(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(GRU, self).__init__()
+        self.hidden_size = hidden_size
+        self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        out, _ = self.gru(x)
+        out = self.fc(out[:, -1, :])  # 只使用序列的最后一个输出
+        return out
 
 class MyModel(nn.Module):
     def __init__(self, input_size, num_heads, hidden_size, output_size, dropout_prop):
@@ -190,7 +202,7 @@ class MyModel(nn.Module):
         self.linear3 = nn.Linear(hidden_size, output_size)  # 输出层
         self.embedding_dim = 10
         self.embedding = nn.Embedding(118, self.embedding_dim)
-        self.bond_expansion = BondExpansionRBF(num_features=10, min_distance=min_distance, max_distance=max_distance)  # 创建键值对扩展的实例
+        self.bond_expansion = BondExpansionRBF(num_features=10)  # 创建键值对扩展的实例
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.to(self.device)
         self.dropout = nn.Dropout(dropout_prop)
@@ -235,7 +247,6 @@ class MyModel(nn.Module):
 
         x = embedded_data.view(embedded_data.shape[0], -1)
 
-        # print(x[0][:300])
         # 通过隐藏层1和激活函数1
         x = self.relu(self.linear1(x[:,:300]))
         # x = self.relu(self.linear1(x))
@@ -280,7 +291,7 @@ input_size = 30*10
 num_heads = 2
 hidden_size = 64
 output_size = 1
-dropout_prop = 0.4
+dropout_prop = 0.5
 
 # structures = torch.tensor(structures).to(device)
 # 实例化模型
@@ -336,10 +347,17 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=False
 
 # 定义损失函数和优化器
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
+optimizer = optim.Adam(model.parameters(), lr=0.0008)
+
+# 获取当前 Commit ID 的函数
+def get_current_commit_id():
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+
+# 创建一个空的 DataFrame 用于记录结果
+results = []
 
 # 初始化早停参数
-early_stopping_patience = 20
+early_stopping_patience = 10
 current_patience = 0
 best_val_loss = float('inf')
 best_model_state_dict = None
@@ -383,11 +401,19 @@ for epoch in range(num_of_iterations):
     else:
         current_patience += 1
 
+    # 获取当前 Commit ID
+    commit_id = get_current_commit_id()
+
+    # 将结果记录到列表中
+    results.append({
+        'Commit ID': commit_id,
+        'Epoch': epoch + 1,
+        'Training Loss': train_loss,
+        'Validation Loss': val_loss
+    })
     # 打印训练、验证损失
     print(f'Epoch {epoch + 1}/{num_of_iterations}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}')
 
-    # with open('loss_history.txt', 'a') as f:
-    #     f.write(f'Epoch {epoch + 1}: Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}\n')
 
     # 检查是否进行早停
     if current_patience >= early_stopping_patience:
@@ -409,3 +435,12 @@ with torch.no_grad():
 
 test_loss = total_test_loss / len(test_loader)
 print(f'Test Loss: {test_loss:.4f}')
+
+# for result in results:
+#     print(result)
+
+# 将结果列表转换为 DataFrame
+results_df = pd.DataFrame.from_records(results)
+
+# 将 DataFrame 写入到 Excel 文件中
+results_df.to_excel('model_results.xlsx', index=False)
