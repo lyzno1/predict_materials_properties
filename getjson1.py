@@ -148,7 +148,7 @@ class BondExpansionRBF(nn.Module):
         self.num_features = num_features
         self.gamma = gamma
 
-    def forward(self, bond_dist: torch.Tensor) -> torch.Tensor:
+    def __call__(self, bond_dist: torch.Tensor) -> torch.Tensor:
         # 确保 bond_dist 张量位于 cuda:0 设备上
         bond_dist = bond_dist.to(device)
 
@@ -184,11 +184,13 @@ class MyGRUModel(nn.Module):
         super(MyGRUModel, self).__init__()
         self.embedding_dim = 10
         self.embedding = nn.Embedding(118, self.embedding_dim)
+        self.hidden_size = hidden_size
         self.bond_expansion = BondExpansionRBF(num_features=10)  # 这部分需要你提供 BondExpansionRBF 类的定义
         self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
         self.dropout = nn.Dropout(dropout_prop)
         self.relu = nn.ReLU()
         self.linear = nn.Linear(hidden_size, output_size)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def forward(self, structures):
         embedded_data = []
@@ -215,27 +217,33 @@ class MyGRUModel(nn.Module):
             embedded_data.append(embedded_triplet_data)
 
         embedded_data = torch.stack(embedded_data)
+        # embedded_data = embedded_data.view(embedded_data.shape[0], -1)
 
         # GRU 输入数据格式应为 (batch_size, seq_len, input_size)
+        # embedded_data = embedded_data.permute(0, 2, 1)
+
+        # 先将数据 reshape 成 (batch_size, seq_length, hidden_size)
+        embedded_data = embedded_data.view(embedded_data.shape[0], 10, -1)
+
+        # 将第二维和第三维度交换，得到期望的形状
         embedded_data = embedded_data.permute(0, 2, 1)
 
         # 输入 GRU
         gru_output, _ = self.gru(embedded_data)
-
+      
         # 应用 dropout
         gru_output = self.dropout(gru_output)
-
-        # 取最后一个时间步的输出作为模型输出
-        output = gru_output[:, -1, :]
+        output = gru_output[:, -1, :]  # 选择最后一个时间步的隐藏状态
 
         # 线性层
         output = self.relu(self.linear(output))
+        output = output.squeeze(1)
+        return output
 
-        return output.squeeze(1)
     
 
 class MyModel(nn.Module):
-    def __init__(self, input_size, num_heads, hidden_size, output_size, dropout_prop):
+    def __init__(self, input_size, hidden_size, output_size, dropout_prop):
         super(MyModel, self).__init__()
         # self.multihead_attention1 = nn.MultiheadAttention(input_size, num_heads)
         # self.multihead_attention2 = nn.MultiheadAttention(input_size, num_heads)
@@ -250,6 +258,9 @@ class MyModel(nn.Module):
         self.to(self.device)
         self.dropout = nn.Dropout(dropout_prop)
 
+
+        self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
+        self.linear = nn.Linear(hidden_size, output_size)
     def forward(self, structures):
         embedded_data = []
         zero_tensor = torch.zeros(10).to(self.device)
@@ -292,24 +303,26 @@ class MyModel(nn.Module):
 
         # 通过隐藏层1和激活函数1
         x = self.relu(self.linear1(x[:,:300]))
+        print(x.shape)
         # x = self.relu(self.linear1(x))
         x = self.dropout(x)
 
         # 通过隐藏层2和激活函数2
         x = self.relu(self.linear2(x))
+        print(x.shape)
         x = self.dropout(x)
 
         # 输出层
         x = self.linear3(x)
-
+        print(x.shape)
         x = x.squeeze(1)
+        print(x.shape)
         return x
 
 
-# 输入数据的维度为30，输出数据的维度为1
-input_size = 30*10
-num_heads = 2
-hidden_size = 64
+# 模型参数的初始化
+input_size = 10
+hidden_size = 30
 output_size = 1
 dropout_prop = 0.5
 
@@ -319,16 +332,9 @@ model = MyGRUModel(input_size, hidden_size, output_size, dropout_prop)
 print(model.embedding.weight.device)
 # 将模型移动到 GPU
 model.to(device)
+print(model.embedding.weight.device)
 print(X.shape)
-# 处理数据并生成张量
-# structures_on_gpu = [torch.tensor(structure).to(device) for structure in structures]
 
-# # 处理数据并生成张量
-# X = model.process_triplet(structures_on_gpu)
-
-# X = model.process_triplet(structures)
-# print([tensor.tolist() for tensor in X])
-# print(X)
 # 计算训练集、验证集和测试集的样本数量
 total_samples = len(X)
 train_samples = int(0.6 * total_samples)
@@ -367,7 +373,7 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=False
 
 # 定义损失函数和优化器
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0008)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # 获取当前 Commit ID 的函数
 def get_current_commit_id():
