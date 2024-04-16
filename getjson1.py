@@ -179,17 +179,60 @@ class BondExpansionRBF(nn.Module):
 #         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
 #         return rbf_values
 
-class GRU(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(GRU, self).__init__()
-        self.hidden_size = hidden_size
+class MyGRUModel(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size, dropout_prop):
+        super(MyGRUModel, self).__init__()
+        self.embedding_dim = 10
+        self.embedding = nn.Embedding(118, self.embedding_dim)
+        self.bond_expansion = BondExpansionRBF(num_features=10)  # 这部分需要你提供 BondExpansionRBF 类的定义
         self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
+        self.dropout = nn.Dropout(dropout_prop)
+        self.relu = nn.ReLU()
+        self.linear = nn.Linear(hidden_size, output_size)
 
-    def forward(self, x):
-        out, _ = self.gru(x)
-        out = self.fc(out[:, -1, :])  # 只使用序列的最后一个输出
-        return out
+    def forward(self, structures):
+        embedded_data = []
+        zero_tensor = torch.zeros(10).to(self.device)
+
+        for triplet_data in structures:
+            embedded_triplet_data = []
+
+            for only_data in triplet_data:
+                embedding_i = self.embedding(only_data[0].to(torch.long).to(self.device)) if torch.any(
+                    only_data[0] != 0) else zero_tensor
+                embedding_j = self.embedding(only_data[1].to(torch.long).to(self.device)) if torch.any(
+                    only_data[1] != 0) else zero_tensor
+
+                if torch.all(embedding_i == zero_tensor):
+                    distance_tensor = zero_tensor
+                else:
+                    distance_tensor = self.bond_expansion(only_data[2].to(self.device))
+
+                concatenated_embedding = torch.cat((embedding_i, embedding_j, distance_tensor), dim=-1)
+                embedded_triplet_data.append(concatenated_embedding)
+
+            embedded_triplet_data = torch.stack(embedded_triplet_data)
+            embedded_data.append(embedded_triplet_data)
+
+        embedded_data = torch.stack(embedded_data)
+
+        # GRU 输入数据格式应为 (batch_size, seq_len, input_size)
+        embedded_data = embedded_data.permute(0, 2, 1)
+
+        # 输入 GRU
+        gru_output, _ = self.gru(embedded_data)
+
+        # 应用 dropout
+        gru_output = self.dropout(gru_output)
+
+        # 取最后一个时间步的输出作为模型输出
+        output = gru_output[:, -1, :]
+
+        # 线性层
+        output = self.relu(self.linear(output))
+
+        return output.squeeze(1)
+    
 
 class MyModel(nn.Module):
     def __init__(self, input_size, num_heads, hidden_size, output_size, dropout_prop):
@@ -263,29 +306,6 @@ class MyModel(nn.Module):
         return x
 
 
-
-        # # 计算每个样本的平均值
-        # x = x.mean(dim=1)  # 将多个三元组的结果平均成一个张量
-
-        # # 通过隐藏层1和激活函数1
-        # x = self.relu(self.linear1(x))
-
-        # # 通过隐藏层2和激活函数2
-        # x = self.relu(self.linear2(x))
-
-        # # 输出层
-        # x = self.linear3(x)
-
-        # # # 获取张量的最后一个元素作为输出
-        # # x = x[-1]
-
-        # x = x.squeeze(1)
-        # # # x = torch.mean(x)
-        # # x = x.unsqueeze(0)
-        # return x
-
-
-
 # 输入数据的维度为30，输出数据的维度为1
 input_size = 30*10
 num_heads = 2
@@ -295,7 +315,7 @@ dropout_prop = 0.5
 
 # structures = torch.tensor(structures).to(device)
 # 实例化模型
-model = MyModel(input_size, num_heads, hidden_size, output_size, dropout_prop)
+model = MyGRUModel(input_size, hidden_size, output_size, dropout_prop)
 print(model.embedding.weight.device)
 # 将模型移动到 GPU
 model.to(device)
