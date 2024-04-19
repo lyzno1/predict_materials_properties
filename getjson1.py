@@ -17,7 +17,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # 获得matbench的数据集
 mb = MatbenchBenchmark(autoload=False)
 # 打开其中的一个任务
-task = MatbenchTask("matbench_jdft2d")
+task = MatbenchTask("matbench_phonons")
 fold_number = 0
 train_data_matbench = task.get_train_and_val_data(fold_number)
 X, y = train_data_matbench
@@ -188,6 +188,7 @@ class MyGRUModel(nn.Module):
         self.bond_expansion = BondExpansionRBF(num_features=10)  # 这部分需要你提供 BondExpansionRBF 类的定义
         self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
         self.dropout = nn.Dropout(dropout_prop)
+        self.bn = nn.BatchNorm1d(hidden_size) # 添加批归一化层
         self.relu = nn.ReLU()
         self.linear = nn.Linear(hidden_size, output_size)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -219,22 +220,18 @@ class MyGRUModel(nn.Module):
         embedded_data = torch.stack(embedded_data)
         # embedded_data = embedded_data.view(embedded_data.shape[0], -1)
 
+        # embedded_data = embedded_data[:, :200 :,]
+
+
         # GRU 输入数据格式应为 (batch_size, seq_len, input_size)
-        # embedded_data = embedded_data.permute(0, 2, 1)
-
-        # 先将数据 reshape 成 (batch_size, seq_length, hidden_size)
-        embedded_data = embedded_data.view(embedded_data.shape[0], 10, -1)
-
         # 将第二维和第三维度交换，得到期望的形状
         embedded_data = embedded_data.permute(0, 2, 1)
-
         # 输入 GRU
         gru_output, _ = self.gru(embedded_data)
-      
+        gru_output = self.bn(gru_output)  # 在GRU输出后应用批归一化
         # 应用 dropout
         gru_output = self.dropout(gru_output)
         output = gru_output[:, -1, :]  # 选择最后一个时间步的隐藏状态
-
         # 线性层
         output = self.relu(self.linear(output))
         output = output.squeeze(1)
@@ -321,10 +318,10 @@ class MyModel(nn.Module):
 
 
 # 模型参数的初始化
-input_size = 10
+input_size = 1128
 hidden_size = 30
 output_size = 1
-dropout_prop = 0.5
+dropout_prop = 0.3
 
 # structures = torch.tensor(structures).to(device)
 # 实例化模型
@@ -373,7 +370,7 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=False
 
 # 定义损失函数和优化器
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.0005)
 
 # 获取当前 Commit ID 的函数
 def get_current_commit_id():
@@ -405,6 +402,9 @@ for epoch in range(num_of_iterations):
     
     train_loss = total_loss / len(train_loader)
 
+    # 获取当前 Commit ID
+    commit_id = get_current_commit_id()
+
     # 在验证集上计算损失
     model.eval()
     total_val_loss = 0
@@ -424,19 +424,29 @@ for epoch in range(num_of_iterations):
         best_val_loss = val_loss
         best_model_state_dict = copy.deepcopy(model.state_dict())
         current_patience = 0
+        # 更新结果列表中对应的最佳模型损失值
+        best_model_result_index = None
+        for i, result in enumerate(results):
+            if result['Commit ID'] == commit_id:
+                result['Validation Loss'] = val_loss
+                best_model_result_index = i
+                break
     else:
         current_patience += 1
+    
+    
+    # 如果找到了对应的结果，则移除它之前的所有结果
+    # if best_model_result_index is not None:
+        # results = results[:best_model_result_index + 1]
 
-    # 获取当前 Commit ID
-    commit_id = get_current_commit_id()
 
     # 将结果记录到列表中
-    results.append({
-        'Commit ID': commit_id,
-        'Epoch': epoch + 1,
-        'Training Loss': train_loss,
-        'Validation Loss': val_loss
-    })
+    # results.append({
+    #     'Commit ID': commit_id,
+    #     'Epoch': epoch + 1,
+    #     'Training Loss': train_loss,
+    #     'Validation Loss': val_loss
+    # })
     # 打印训练、验证损失
     print(f'Epoch {epoch + 1}/{num_of_iterations}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}')
 
