@@ -6,12 +6,11 @@ from pymatgen.analysis.local_env import CrystalNN
 import numpy as np
 import torch
 import torch.nn as nn
-import ast
 import torch.optim as optim
 import pandas as pd
 import subprocess
 import copy
-
+from collections import defaultdict
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # 获得matbench的数据集
@@ -20,9 +19,9 @@ mb = MatbenchBenchmark(autoload=False)
 task = MatbenchTask("matbench_jdft2d")
 fold_number = 0
 train_data_matbench = task.get_train_and_val_data(fold_number)
-test_data_matbench = task.get_test_data(fold_number)
+test_data_matbench = task.get_test_data(fold_number ,include_target = True)
 X, y = train_data_matbench
-
+X1,y1 = test_data_matbench
 def get_atom_distance(structure, atom_i, atom_j):
     """
         计算两个原子之间的距离
@@ -135,12 +134,13 @@ def get_triplets(structures):
     return all_tensor_data
 
 
-
 X = get_triplets(X)
 X = torch.tensor(X)
 X = X.to(device)
-# print("Max Distance:", max_distance)
-# print("Min Distance:", min_distance)
+
+X1 = get_triplets(X1)
+X1 = torch.tensor(X1)
+X1 = X1.to(device)
 
 # 距离bond expansion处理
 class BondExpansionRBF(nn.Module):
@@ -163,33 +163,19 @@ class BondExpansionRBF(nn.Module):
         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
 
         return rbf_values
-    
-# class BondExpansionRBF(nn.Module):
-#     def __init__(self, num_features: int = 10, gamma: float = 1.0, min_distance: float = 0.0, max_distance: float = 10.0):
-#         super(BondExpansionRBF, self).__init__()
-#         self.num_features = num_features
-#         self.gamma = nn.Parameter(torch.tensor(gamma))
-#         self.min_distance = min_distance
-#         self.max_distance = max_distance
-#         self.feature_centers = nn.Parameter(torch.linspace(min_distance, max_distance, num_features))  # 线性分布的特征中心
-#         # self.feature_centers = nn.Parameter(torch.arange(1, self.num_features + 1).float() * 0.7)
 
-#     def forward(self, bond_dist: torch.Tensor) -> torch.Tensor:
-#         bond_dist = bond_dist.to(device)
-#         distance_to_centers = torch.abs(self.feature_centers - bond_dist.unsqueeze(-1))
-#         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
-#         return rbf_values
 
 class MyGRUModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, dropout_prop):
         super(MyGRUModel, self).__init__()
         self.embedding_dim = 10
+        self.running_mean = 20
         self.embedding = nn.Embedding(118, self.embedding_dim)
         self.hidden_size = hidden_size
         self.bond_expansion = BondExpansionRBF(num_features=10)  # 这部分需要你提供 BondExpansionRBF 类的定义
         self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
         self.dropout = nn.Dropout(dropout_prop)
-        self.bn = nn.BatchNorm1d(hidden_size) # 添加批归一化层
+        self.bn = nn.BatchNorm1d(self.running_mean) # 添加批归一化层
         self.relu = nn.ReLU()
         self.linear = nn.Linear(hidden_size, output_size)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -221,14 +207,12 @@ class MyGRUModel(nn.Module):
         embedded_data = torch.stack(embedded_data)
         # embedded_data = embedded_data.view(embedded_data.shape[0], -1)
 
-        embedded_data = embedded_data[:, :10,:]
+        embedded_data = embedded_data[:, :20, :,]
+
 
         # GRU 输入数据格式应为 (batch_size, seq_len, input_size)
-        # 将第二维和第三维度交换，得到期望的形状
-        # embedded_data = embedded_data.permute(0, 2, 1)
-        # 输入 GRU
         gru_output, _ = self.gru(embedded_data)
-        # gru_output = self.bn(gru_output)  # 在GRU输出后应用批归一化
+        gru_output = self.bn(gru_output)  # 在GRU输出后应用批归一化
         # 应用 dropout
         gru_output = self.dropout(gru_output)
         output = gru_output[:, -1, :]  # 选择最后一个时间步的隐藏状态
@@ -237,91 +221,12 @@ class MyGRUModel(nn.Module):
         output = output.squeeze(1)
         return output
 
-    
-
-class MyModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, dropout_prop):
-        super(MyModel, self).__init__()
-        # self.multihead_attention1 = nn.MultiheadAttention(input_size, num_heads)
-        # self.multihead_attention2 = nn.MultiheadAttention(input_size, num_heads)
-        self.relu = nn.ReLU()
-        self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, hidden_size)  # 新增的隐藏层
-        self.linear3 = nn.Linear(hidden_size, output_size)  # 输出层
-        self.embedding_dim = 10
-        self.embedding = nn.Embedding(118, self.embedding_dim)
-        self.bond_expansion = BondExpansionRBF(num_features=10)  # 创建键值对扩展的实例
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.to(self.device)
-        self.dropout = nn.Dropout(dropout_prop)
-
-
-        self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
-        self.linear = nn.Linear(hidden_size, output_size)
-    def forward(self, structures):
-        embedded_data = []
-        zero_tensor = torch.zeros(10).to(self.device)
-
-        for triplet_data in structures:
-            embedded_triplet_data = []  # 用于存储当前三元组的嵌入数据
-
-            for only_data in triplet_data:
-                embedding_i = self.embedding(only_data[0].to(torch.long).to(self.device)) if torch.any(
-                    only_data[0] != 0) else zero_tensor
-                embedding_j = self.embedding(only_data[1].to(torch.long).to(self.device)) if torch.any(
-                    only_data[1] != 0) else zero_tensor
-
-                if torch.all(embedding_i == zero_tensor):
-                    distance_tensor = zero_tensor
-                else:
-                    distance_tensor = self.bond_expansion(only_data[2].to(self.device))
-
-                concatenated_embedding = torch.cat((embedding_i, embedding_j, distance_tensor), dim=-1)
-                embedded_triplet_data.append(concatenated_embedding)
-
-            embedded_triplet_data = torch.stack(embedded_triplet_data)  # 将当前三元组的嵌入数据堆叠起来
-            embedded_data.append(embedded_triplet_data)
-
-        embedded_data = torch.stack(embedded_data)
-        # print(embedded_data[0][0])
-
-        # print("-"*100)
-
-        # # 使用第一个自注意力层
-        # x, _ = self.multihead_attention1(embedded_data, embedded_data, embedded_data)
-        
-        # # 使用第二个自注意力层
-        # x, _ = self.multihead_attention2(x, x, x)
-
-        #  # 计算每个样本的平均值
-        # x = embedded_data.mean(dim=1)
-
-        x = embedded_data.view(embedded_data.shape[0], -1)
-
-        # 通过隐藏层1和激活函数1
-        x = self.relu(self.linear1(x[:,:300]))
-        print(x.shape)
-        # x = self.relu(self.linear1(x))
-        x = self.dropout(x)
-
-        # 通过隐藏层2和激活函数2
-        x = self.relu(self.linear2(x))
-        print(x.shape)
-        x = self.dropout(x)
-
-        # 输出层
-        x = self.linear3(x)
-        print(x.shape)
-        x = x.squeeze(1)
-        print(x.shape)
-        return x
-
 
 # 模型参数的初始化
 input_size = 30
-hidden_size = 30
+hidden_size = 64
 output_size = 1
-dropout_prop = 0.3
+dropout_prop = 0.2
 
 # structures = torch.tensor(structures).to(device)
 # 实例化模型
@@ -330,24 +235,22 @@ print(model.embedding.weight.device)
 # 将模型移动到 GPU
 model.to(device)
 print(model.embedding.weight.device)
-print(X.shape)
 
-# 计算训练集、验证集和测试集的样本数量
+# 计算训练集、验证集的样本数量
 total_samples = len(X)
-train_samples = int(0.6 * total_samples)
-val_samples = int(0.2 * total_samples)
-# 测试集的样本数
-test_samples = total_samples - train_samples - val_samples
+train_samples = int(0.75 * total_samples)
+val_samples = total_samples - train_samples
+
 
 # 划分训练集、验证集和测试集
 train_data = X[:train_samples]
 train_targets = y[:train_samples]
 
-val_data = X[train_samples:train_samples + val_samples]
-val_targets = y[train_samples:train_samples + val_samples]
+val_data = X[train_samples:]
+val_targets = y[train_samples:]
 
-test_data = X[train_samples + val_samples:]
-test_targets = y[train_samples + val_samples:]
+test_data = X1
+test_targets = y1
 
 train_targets = torch.tensor(train_targets.values, device=device)
 val_targets = torch.tensor(val_targets.values, device=device)
@@ -370,7 +273,7 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, shuffle=False
 
 # 定义损失函数和优化器
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0005)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # 获取当前 Commit ID 的函数
 def get_current_commit_id():
@@ -435,18 +338,6 @@ for epoch in range(num_of_iterations):
         current_patience += 1
     
     
-    # 如果找到了对应的结果，则移除它之前的所有结果
-    # if best_model_result_index is not None:
-        # results = results[:best_model_result_index + 1]
-
-
-    # 将结果记录到列表中
-    # results.append({
-    #     'Commit ID': commit_id,
-    #     'Epoch': epoch + 1,
-    #     'Training Loss': train_loss,
-    #     'Validation Loss': val_loss
-    # })
     # 打印训练、验证损失
     print(f'Epoch {epoch + 1}/{num_of_iterations}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}')
 
@@ -460,7 +351,6 @@ for epoch in range(num_of_iterations):
 model.load_state_dict(best_model_state_dict)
 model.eval()
 total_test_loss = 0
-
 with torch.no_grad():
     for inputs, targets in test_loader:
         inputs = inputs.to(device)
@@ -472,8 +362,6 @@ with torch.no_grad():
 test_loss = total_test_loss / len(test_loader)
 print(f'Test Loss: {test_loss:.4f}')
 
-# for result in results:
-#     print(result)
 
 # 将结果列表转换为 DataFrame
 results_df = pd.DataFrame.from_records(results)
