@@ -1,0 +1,8 @@
+#container {
+    width: 100vw;
+    height: 100vh;
+}
+
+#container #control{
+    height: calc(100vh - 60px);
+}

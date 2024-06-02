@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<script src="./js/PeriodicTable.js"></script>
+<script src="./js/new.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>原子间距离预测</title>
+    <link rel="stylesheet" href="./css/new/new.css">	
+    <link rel="stylesheet" href="./css/new/PeriodicTable.css">
+    <link rel="stylesheet" href="./css/new/inputbox.css">
+    <link rel="stylesheet" href="./css/new/component.css">
+    <div class="topbar">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAArYAAA
+        CQCAYAAAD9aSjuAAAAAXNSR0IArs4c6QAAQABJREFUeAHsnQ
+        ecFdX1x+97b2kifUHBggW7YtdYIhjFhgUj9l4SxWis0X+sGKOxxiQa
+        E41dYyxRQNTYsfdCEcWKBRaUXTrSdt/7f39v3yyzszPz5rXdt8s9+/ntbeeee
+        +6ZdubMnXkxY6lVWSCVMjEzxfQ3S83mSWM2p7QFE9gEdDUp05Fyp3RqzKxUzHw
+        ZS5kvTdx8Fk+Z0bEtzdRWNVmrrLWAtYC1gLWAtYC1gLVADhaI5cBrWVvIAqkvcFp
+        /MkOSMbOfSZp9U8b0zVWVWMzgE5vX6Hdfoqv5d2xdsyRXGZbfWsBawFrAWsBawFr
+        AWqCcLWAd2zLdOqmppntygTk6lTTD2Ui74pRWFEtVnNxP4zFzbGyg+aBYMq0cawFrA
+        WsBawFrAWsBa4GWtoB1bFt6C7jGTy8z+NgMStaZk1lSMJxyR1dzUbNs+FoEXhnf0ly
+        paG5RhVth1gLWAtYC1gLWAtYC1gItYAHr2LaA0b1DpqaYLsml5lTcy1PxMAd420tZ
+        Zge4Ded2hHVuS2llK9tawFrAWsBawFrAWqA5LGAd2+awcsAYqcmmJ9HZs3BozyQ62
+        yOAreTV7AR/TGxlLi35QHYAawFrAWsBawFrAWsBa4ESWsA6tiU0bpDo1Cemb3K5OZf
+        203BoVw3ia656RWvjcbN3bAvzfHONacexFrAWsBawFrAWsBawFii2BaxjW2yLhshLf
+        WW6JReaS2BRhLZDCGuzN+Hcfh/vaja0X0todtPbAa0FrAWsBawFrAWsBYpkgXiR5Fgx
+        IRbAia2om2jO4CsHX5I/v9ycWqmOTmsl55szQ6Zhm6wFrAWsBawFrAWsBawFyt
+        oCNmJb4s2TmmAO4IcUrsdx3KjEQxUsnp1hFi+SrUH0dnnBwqwAawFrAWsBawFr
+        AWsBa4FmtoCN2JbI4KnxZsPaCebFupR5ojU4tTIDX2TobSaZoSUyiRVrLWAtYC1gL
+        WAtYC1gLVBSC1jHtsjmxYltx7KDS/iVsIl4ir8osviSi8MRP6bkg9gBrAWsBawFrAWsB
+        awFrAVKYAG7FKGIRmXZwc9YdvAvnNvNiyi2WUVpOQKf/urTrIPawawFrAWsBawFrA
+        WsBawFimAB69gWwYjpH1hYYq7m18JOx6ktehQ88+MJX7NU4GM22FRU/olo8BLG
+        W0yaJO3PuOvDN4DyevC1K2RaifZ8HWFT80UhMmxfawFrAWsBawFrAWsBa4Hm
+        tkBFcw/Y1sZLTeQncJea+3Em18KpLArhvM5PxcwLOKrP8n3Zj0xPMznWD2c2A
+        umTYnWLzGHochzYNUKXJix1y8w2VFrHtollbIW1gLWAtYC1gLWAtUA5W8
+        BGbPPcOlpLm5xk/oDzeEExorQ4sZ+jyhPxhHnabGZep1zwlwlYGrFRHT+Zi4
+        6DcplmLG7OTQw0N+XSx/JaC1gLWAtYC1gLWAtYC7S0BWzENo8toC8eJCeaB3Fot82je
+        0MXnNdFOJ2P4Mzewa9+vdnQUKRMbEvzGTr+IjnBnM1yhavId4wkOmX6ReKzTNYC1gLWAtY
+        C1gLWAtYCZWQB69jmuDH44sGvk0lzE07iKjl2dbO/x0rcf8Xbm4diG5sF7oZi53GeeZ/N
+        /Dk12byerDUvoXfnrGOkTK+sPJbBWsBawFrAWsBawFrAWqDMLGAd24gbJDXVdK+bZ+5O
+        Jc2wiF382J5LxM1VsYHmVb/GUtbFNjPv1o43JzPGQ1nHqXeGs7JZBmsBawFrAWsBawFrAWu
+        BcrJA0d/gL6fJFUuX1CQzkJ+bfR95OTu1REz1StmoRMJsX7GV2bslnFrHDoz/MEsSsjvVKV
+        Pr9LGptYC1gLWAtYC1gLWAtUBrsYB1bLNsqdpJ5phknXmLR/jrZ2Ft0oxT+3C8wmyOQ/lL1t
+        DKMW5xShhzQwQlrGMbwUiWxVrAWsBawFrAWsBaoLwsYB3bgO2BI9uubry52dSlP+WV63raNx
+        Mxs1NiS3MESwA+CRiiZaoHmmdwuGtCB4+ZWaHtttFawFrAWsBawFrAWsBaoAwtYB1bn43CDy70
+        q5tgXmYNwRk+zYFVOIxTTcIcToR2F75I8HYgYws2oONy5vVKmAo49d+Htds2awFrAWsBa4HcLJ
+        BKpR4HF+XWy3JbC1gL5GoB69h6LJb+Wdyl5kOqd/Y0BRb1gwo4jL+Lr2I2qdjCPBLIWCYNsZ
+        R5L0wVXnD7LqzdtlkLWAtYC1gL5GwBLWfjs4upa4D9hnzO5rMdrAWiWcB+FcF
+        lJ9bTHsanvO4lYhnte6/1fUfHO5kzYhuZ6S5RZZ2Nx8wndXqlLYgqzLdBTbbeWsBawFr
+        AWiAvCyzJ9LqQtC/O7QmxGGEGS9YC1gJFtYCN2GbMydKD38eS5qGoTi232zN4EesQlh0c3Jq
+        c2vR0E2ZG0F5E5Hmh2cR8FdRu660FrAWsBawF8rLAj65ex5G/3FW2WWsBa4EiWWCld
+        2wzL4ndTXo1yPp4CMdPz5Bui3cxm8S2Mo8XaTs0r5iY+SFoQMIHHzJH/aiDpZX
+        IAno0Cv4HpoM/gy4r0fTtVDMWYLs/DD4E61mjFN0C7TwS/w87r+qps0VrgZXGAu
+        z/XcF54HkwFywC74FzQa4v7TfYbaV2bFMTTQ8itc/hzJ3QYJGQDA7tlxhsUGIrc1psfTMvh
+        LXcm5YFKcgcQ9ffBvWz9a3bAplHoj9jFvo55XPA25xYlLe0clngHaa7NXiX7b/ByjX10s0WW+
+        paK7u6qQOFO9wVNm8tsDJYgOOhHbiAuT4DeoI9QTcgZ3Y7cCOYBM9qpDnTSuvY8pLYusmUeQuLD
+        Y5iNRy+u+PtzNZ87eC1KPytlYeotXVsS7TxOEhXBYvBHHAZYDVLWdFdLm02Jf8cOuri2yaJufUGa+
+        Q6OfpsCj4CT4IHwM4g7+hCruOXmN85v+lntd37Q4mHbXnxbMPNwT9BjxJosz0y+/jIHepTZ6usB
+        dqsBTi+hjC5s8GLBFT0kv6PAZNdj/pLA9pCq1dKxxandnOc2tdx4jYKtQ6NPJafzTdphxOlP
+        Ylv0i7Mxt8q2hPGd7trmUWiXfinwFrF/MpXyUWoNgZ0B1eAFznIB5KWC13rUWQzykd46tpS
+        cTiTkfPeNZdJcTLWt6k/A3JKjgZvgK+R8xewCfnWTFr76dCuzEfRlJWJTmWyehSq6FExadsA
+        YbrZ1U2EJWuBVmsB9mFif02J+p3APeB2cBb4E1zHcw69HnxAeQfKVzft2VAzvyFnM8EWwK
+        ndkeUHNbXjTSorJuB4fGZyjugEj14eLanJZjO/uWOXD8pDw7arBQdyBVgAHJpFpmyifehS4yi
+        WSZeT7tsWtwjzUsRV9BTIKXoOv9aG3QAWAjdpjdgZwPfmsZztiM6HuSdCXvtCm43Ye7cFcz
+        3QNf+vyK/u5cm3jKxzXLK92W3yldsa+zH5A8C34FrQvjXOIVedmecGQMt7dExp35Kzp8fvbYKYyz
+        neiVB3FNDTyTrgptkUtgAdQBX4EfjRG1Tadz28hvWWU5PMEJy3hX5OnbsOnqXgd1FeJvOO0Rr
+        KrC0e5J6vk+eX1q5sDfq3dh05WJd4juKHymVO6HWVRzcVPwCdykXHYujBfAaAWuDQmfnIpXM3cCVY
+        6gjKpLflI6+l+qDz6cBtD12MDmgpfVpiXOb7D+Cm3xZLD4SOcQv25Pcu1jjNIQfdc3rC4acTMp7
+        I2EAvDbX5F+iYY0dwYmbO7kTvMrRq5w399dSh0T5MeS2gm3xt3+HAe82bSZ0CAwrsXAi89CYVr
+        doufvt90euI1A6Xw+o4cUEpzt00HL+diq5AGQmULfzm39bnXQ6bgIM1AZZ5j2LKWnfU4oQeW/
+        vopqqnWly5IinAXLYBP2hSLnLWluY1CnK07laP2xz6Ni9BLdAJha9xlHal57WAKi0yJHPeBNw
+        JvJEl3aysXQylkCMHJogOL8YYpZaB8u2BvpqRBNPAiyCvJRv005vwDn1KZq1S69/S8pmjlvb40V
+        ktrVsh4zMhfcFAT/ZudOSQfwg4dBsZnXMVIPGSnprpawgOfUbmVNDmb3YcW+Wd1k4wp+DU1vk5c566
+        cTh9fgv88x67HDvWTTQXeOadwqHnzsl/7W05zqG16sQBO9g5gj2pHruUxeNr9Ljbo5tTDFon2Go2Bx
+        PZGVQ7E3KlWjNbMCFPJ2U9fptZsLBmEICeWhfspfuaYegWH4JJK9J0PdBFOYiK8jQF4WGO7YktbowICjCH
+        Q32MlJd9kHO3R1bRouMRptIiLMxXn3fzo3+1iEJFGpQJOU6slmVpqd1pnkl+raGoU1BnJHA/GXKzzqd
+        go7RRtgtO3DleJ86vjOPLCc7ktM4uyvjlyMNc7/DagLpby1HXtqYTB64ezQTRHuUwX5TbCfidfP5
+        QDvrlqwNz0qPAoPVcRZsbY6wHtF7T94WKfPUvdj/0uxF4SVGVjsUeq5zkMT99s1nriRV1zEb6ik
+        nBa+CREebYnlJO9gnShTm84GOsR4L4w+qRM90lSw7RFmH8baGNOX7smrM7O49Cq1zqhd46lrScwCG
+        /qKzaGj7bRf5Sh9mTntYWtnPJ54CzdrbXgfOW4ZmvR/MlV6aMBiCC/arXDq19GQIHSEdQ1tF29BvqO
+        ZDdRUWNepfLboIue4AnXArqMe1u5aJfrnqg+36uuXizehxWsp8XR7ZO/r1A2bwogy5+0aMa6tfJ1ba
+        thZ+5bQR+Bb4BuZC+YlIQMdg7IQMeWJDwZuiM7rsF6P98rsMjZ3OPrMtyldHa+JnvVp45e4v6/FWr
+        Iyah81o2+tA9MZidCK+73yg3j80HWCCiUzsFh27jABFtthrbNPoqBMsQvmjtk+UI0SNFRRkVVTgclM
+        xRyddW6PQ6CKJGB3++YxS7H8ryEmXqO9Bq11yiu16M8q6fpCpNWhfbrlh2Q5ac2F8CvQU/GihS53wF
+        Q2s2XwPXgRZbU83YOwDv43fZZy+vHajT1x82Bn8DN4ENvTzlXkbnIRnd/Z5C0BRKH9Fa8LkEGUGOrX
+        Qq6/Wl6Kd9+n3gRznf7CLk9y5B2g/LOiBRjP2bOY5wzdkv+2AxxmluGUxE+8arfhPK1Cka3RA4JH80
+        8J6LdQxs1dy6t7rxcNx+641I+pRfwqktxYe4y9pefOprgNcW2KvV/2Y5B0YcnAkcmkFGTsV9oMW3Mz
+        qcC8JIi+bXAmWxzrasd+IclMOexwG97OIlOZsn5CAqkBU5qwDdTN0IfgJRSY/C5XQX7DgFKudpYKzVw
+        VfAS7eLlcr1gdZS/hFo3beX9OLjzz1iy7aIrp2A1hFL73zoL9kmh1BFrR4EP4L3gG6uLwZd1Ze0HfB
+        b1011amw2+S3djo4HSFEXOXN5Jx/dkKObBYeezkdGa+vDZLVfhNGhrW1Ojr5MKiiafy9tfV18W1L23lD
+        LJqc7PDYNsADRxzO9jpu3DM9drKctWpQmQJWyrK6daI5y2wOnNsln0NYvS2XzUIqD5H4dKR6SA6Fo0/5
+        5iCy4C+MOA9NBFFJkZ8+CB7UC5FDIQfOL0smp3TFfE9F3Q6A1mr8FL4IfQCGkt8L3yVefqP0YQ0
+        6txvKjV6ic4tfgUzeTurL+vjf6KZKkpzjfgnxpMR0jnRvhU2T7DOC+ifqa8s+Bjv8gui7q9mspPhT
+        Xp5cc+pCMbsZEN+WqE320HMRNrfZJUNS5M1l9TaLOPWlPXvtos93cRtU7Fz70l3M70TWvd739afunq
+        93Jfk4mry9reOUXvYxisdShhyYmb7ZZ++/XXLPTzNVW65wCU9dZp2Nq8OAKtRd9UB+BvCh2htt
+        p8+blxIHf+3RtUoXOZbMerolyBVQw/7947PJsAeLKrivbrRJ8AIKIm5rif3QemV2AXrpquOCTXx
+        U8BHKNFukkeC9o0RcKGL8n0F32CUB2U9RBJ2FFl+UEzQdVmbwc8rHgWnAc2AasDdJRq+beURhXj5
+        /9ogNUp4ZF1QfeBFgTaE66aYp6gwJrznRcVL1y5UMTXVzfj6iR9j9tzweAotBy2LYDVwOHbstVh+b
+        mR1E5lEsdhXNMa+DfJVed6aP930thOpyU6xjNyc9EBrkmo4h0R6DHyaJ7ctWFPheke9b/k13KehlG
+        rvPz42eOv3HN2S97pV+/1lbHxHoAXSsOBg0vi2kelHcCS8BX4C0gUsCpJNe4nBzO1IABHWZ8O3dzkz
+        Rb46tubVLJrRGwKXp3TfHrs0EbggaajX4abS5s1bi5X/C8dQo/qTYlFo9N6bNa+89j06YtDuofpR6
+        HbQRR2MA3+9FhMQ95j68YaB4Nk4eh9Si4G7rNCeNrrW1Eq8ezMbZ09E8kzP6xLUyb+Uap5sU23I7kP
+        WeOPulU6nZgG1f7tOVVxZgaT+OKZmQwgLQQx24SOg6UwOYi5qFfmjoQnAD00e0EKISSdJ4AXgG
+        jwWvMSXUlI+awNsI/AJU+g1zN+Bf71Ker6KvvJ+qcpqj5r8A6IFeaRYePAOe7BuIUZLSutntDT
+        dPMu+iWdyS5qbgVNczrJkpnr6gJzH1Dy8Xo4bvmDzkLaJeNNLee8OncXraEvveh3LEPPfSQGT58uKm
+        oqA+MzZkzx/To4btCSfumlmXcw9xyftTOeDp+tL9vBLLRchjWZJwfszG2VDvzeYaxdR4QXYquf
+        6TucPL6ZukXlHdXQ1Si75PwDs3wjyGVrM2BzpOHAV2bXgaPgvHIL+v9Cx2zEnPWPHVODaJDmOf
+        jQY2tvZ7564sXz4NVwOlAN8U6EE9m3g+Qpgk+tW+fgfp0TjeY9HtQ+lLLQrAu0DXpW/AGeBvo
+        fKtz5w+kadLJNivNqKgclEqaU3Ach+M2aICiEkpo5/02ZWIfsx+/kYonXuu3Ttf3Y19+uTTKQ
+        LzlfyQy/o1+vvOJxcyPeKsHxrY0oSeqjGG7YqCZUcZtbTz6Ri9nbR4j1tsJY30Z39JsiH1a/
+        cnDuy3YljXUhf3O/Vu0H8C2Fl/BxHg6YP9esKDGAhajnw72khK667hRdOoYoLVeYXajuSD6nt
+        4bMK9Ix3auIzEX/TypLhL9ffo+Qt0Jqmf8RjfS9NP8Twb7glx/SlXHz7PgP0CO+1TSJsQYXaj
+        cC3AeNb8E3qdCp9FXJ/2iEuNegMBrfYTKed0QbAfkiJ8J3kOHZaS+hKwvaBiQadwE3im+jGVSi
+        b66CH4D1syiUh3tcmoHM6c3s/CGNjOm9qUXQYdQRoI9jNUtC0+LNTMPHUsfZBSQ87A++moZz
+        8HkdYypTo554P5CewPRT9tA+4/jQ0zKNG7RwNQ48z+KdyP/0cbVravEvL9C4/UCtJbt1mGOMwL
+        aW3018z+VSSjYoJtM3SitBs4FX4M9QV+wKRgI5PDmQwpS7Ysd31dnX0dQDVX9+q0Sm7nsN8mUOQ
+        W/Uye/ohIDz8e/mkE6g8vqD6TLGSDjYOF6mRi+qJlK26ftiOrW9m73Wb+qqp+8SuCs7YOOT9DBd8
+        0sTtvUeNwMISqpnSuQML6MncAwVYFMrbxBNwBY+EFnGtjmrMSW5m9OuS2lbE+dKLI5KOeyvRXJKpgYT
+        8eSTsCHFCxshYA30U8XyaIT+ur42g0My6B/0QcJFjiWeR0Y3JxfC3PSHHRiqwyQcA71e4MeQNt
+        qLaAIkfqtC6LSVBjlJH8KdL74lPlMI41M6KrzzY3g6EwnOfpDkSOHqGjEOCcg7C6g/dOhFJlf
+        AM3jdfAo456b4T2Rspz0v1M3j7QRwfMkFUMzlSfCc08jhjIsoLO2rbaXHHiRrjWzwTdgMngLyF
+        HTvvMj+BXzcpwuirkTY+5Dr3+DniG9qxhnjZD2Fm1iDrKZbnRFF6Dr9cpQfx7JDcpDp1KvCHdWot/
+        dMJ2QlbExQ5LitowxvnF16ygx5w3Q9PMQbf/C3HReahXEfHSDXIPO12VTGN5+8NwJHgIvgIdBSa5nyB
+        Xp2N0G3aanS95/MxKVQ6tivb6dHuuVKgaQNW96rHJMVbz3RTMreu0xu8d6RblL1bdXebS+yLNmNOWUW
+        Z4wKfVJ+m7AO8VGZTYASytWrI1s1NiGCnppzmWb+akppksbml6jqbA9R4Ns1ODkN+qcZ4HBdsw2
+        YA7tWueoi2NRCZkxoBeftGg/V1pIB62TKpSOLOqkEIZCOoanZlFM7ROz8HibtT5an7O5FOwD
+        dgBuJ7GgqSDrEPAgCIpa5S0fmceDJPCSoiaymbNW8rRM+ZfUOfx6cepxsKNbAcpXAIcucreVe
+        x6ltV5aEdwmRL3Wkjs0rglDHhUIWx/MdYT6pPfmIbZZuqBrB+Ac6zruu2tg0r2Ae+26Xs7cM
+        5tS8Gidus5p+dDZ2eSXazuTPSnLhNcpV929ejEPfXlIEXttx8297e4y7YPAR2AO+BuYBZqD3mC
+        Q7hUeZWIzEr2vSCZTl7rr88lz5q8jSPAc0dL7Vltr1dGxb75Zko7H6v5rTk0+Ihv14bNVmyVr
+        zVOEHlZp1OAUYubteAURkE3Td+ZObZMUIyhy9FGgl9+kR+usIAaeSE4w+7u0vzO2sVngKre1rO
+        6Us5EclQq2fW02xojtH8KnKFehN26ScRJ6pR2QiGOHsjHPQTAIw0FUJ2oZvIrejQFPos8PpL
+        q4aX7rgw1BB6CIWH+gi58ij6rfGvjRV8j5j19DgXWKwK6TRYba38nCs4R2ORxvgOeAHhcvJi0
+        JIfsxBAtFJbbR2gi8EXAqbkTahpdkanbKpFOVooscWdX9F6wJDgZ7UHcwbS+RF82tT9L/G10/X
+        PVlmWUOXJMC6XRXS40rn3eW8b7Cdich4B7QxUdQ0JMFH9Zmr9qeEXVsi/7HXJzt3pmye7vrRuH3zP
+        N1eHTsNCHaFLnTMaWnRLmSzkF35NqpjPjXCtFF199pIe3l1nQ4Cq2aUWoM23UrtnkTH4L6veF5Cjg3
+        kWdm+vgl8gh1fhVmgc/B90DXwEVA/l1XMADoKVNHEEY703iVewc1VYk+t3DVch/gYQIC22Im9lS7
+        9ubc3kurP5d7a76pDuTNpyH1qVknudQ8l6p/pOgn4nksenBss7Rh/Np1cdYJ/xjwHBsnfcH2ZWw
+        rlZPMrtirt6bDEoSl8Q4m/ViprUzPZx4vUrepT727qgcFncDfclfmm2c/UiRjB/q/AMJOaGFDzK
+        RxV2R9FcbktDFeJ/J94P/WqXNS2uRongr2BYOc+pBUR+tEoBOMTkz/Rm6Tizx1OunIiRd8ib
+        F1QtKFUSekbcCeoA+4CRSNMnN8CIHr+wjVdl0IhmTa3iU9A/wPOE6F5jwKTAZjwHd+c6Ze5
+        4zVSLR9dXJfBL4AWoowEGwF9gKaY29wFXLuJG12Qs9eDDoBaPu7aQ6F4eilryO0I394prHB+aVNX0M
+        4kPr7wWagKxgGHMdW29WhRtcPp7KVpjpGHNoWG/yDwkdAy4E+dhpyTemrm4Xd6HeWT1+/fdaHrUWq5JA7
+        pE98aX/Rfr63U+lK5XBcBc5z1el4WY/yheA4kM0hadSVwjRwHdD5SDfLrZV03guip9g/aoManXrsqOOsL
+        6iGf7FT35wpOuBSmStcY2rb6ib4OdXR3pnkHCCfaiMQRrgi5l/g3+Bz5qRrXlZijN/DdHVWxnoHuJ5tRrzyvMKXHV
+        ROr6ro47fjR9AlGotegOKR+ufOI/Um6QTzKNHc9mHSMFA7cBroFsbXltr4FNrfHFthv1va0tz85sK2vQlEoZF+/Qu
+        pY9DDowzs4dFnpP4Bts5lbPifAHpsfBQYCPYD+ryMLqiqj0LPwLQz8DpCuajS7Lzo2x+MA370NZV9wEOuxnukJGV9hk22
+        vhisHVVxeG8FUUmP6zaOKruYfIzrp6eWGMjBSBP51YFDQ516d0rjL8DL4LdOPfnzgUOXOvWtOWUy6wJnCYYzNyf9joxu
+        HhsRdRsDHV/6IZjnwH6NGFwF2m4HfvSmi61ssiiqJRt65OzQJDKyQxhp2YK+b3ssuAjcBtwyKEYifVJMN1atnpiHPgH
+        pXrbhNcCJYZOEuR+4EMzOdHwwjL+UbYy/c0YHd7IVhc6ADwukP/vobvPLV1F5OdANUs5Ev6dBFFqcvuOe1aFyo
+        2XL0ndcOQ/mdOCW/1PTsf0+/RZXfefUFTtNVZlV6malI0kb+MkmEnlHfKAWs6ffbvVjSV/UaDgN3Mqdwk++TG2
+        sUl9BSE5MP1ZUtHZZ3Jhr2tgUC5nOpk5njph27BPLnXIBadgLIxJbBV4F6btd0tlAj/uWkeZKisR2BLr7jUqK
+        gCgiMhqMYtw3onTEPnICdQFXRLA/6AdmgG+AXkD6nLRZCF10U/pfsF3AgIehjy6S27van1Ce+oUkI1z1UbNnw
+        6gI0glAkduGSCd5LykSM9Nb2UxlvxuUfzDv+1zjK7Ls0IbY6WnaFUlpIMovURDc5OaZ7m5oxflT0T1oW65Fm
+        26OhrntQ34KdXfQpicAq4MhlMeSnkib9ynHXOr9KO9IsJ+wItbtiiw9lXBocycTks6h7e8h7dma5DecD3Q+0r
+        HTFmgIk0j7WAGTedtdz/6jgNxhQMFBnde177npSHh0Dv4DNnKuHe72UuaP8xGuCP1BwG+Zjdi1HXWdmwTuQef
+        xpHkR896SjvtE7Pxpmo+Xux4tLFpb+dHcbmv3iDhoXmxyznir/zEn6uhNiUJyhxh4ckqPiXF6A31Au8kdeF5K
+        tZJOvGS3m2MvXqjTI7Y2T2zjqBHbn+BNOwKkOwLdZf8TxPMxEv30ctYHIIjepUGPbYpCyHotaCBPvSIqL4J9wG
+        pgP6CF9orA+epDvZ5s6Ne7ngTSOyiqRVOaXuV/w41CUSboI4QxKsHn6RGb/lOkVBeUNJHXvEVKOzj1habI6gl+
+        Dvx+2Wwm9fsXOka+/Rlb29ZNipQ0ukhSvsXNQH4p+BJcDdoFjZ1pJ0nTXkF85VY/YsSIn/vpxCwGgLAXvDRR7VO
+        V3v7UVYDXgZv0pGBjNy9lRd38SE5x2RAKdgNHAc0hjBSF1Mu5OjfoWOwEVgFvg1ypmg56uajk543mNjRzuiOLMT
+        o6OsG3G/gqC7/TrPPwJUDLA0pOjKPrQLZjBJYGUoRZL5nqhs+XaNsSHA12BTuAoBtLBSPbgw9BVNrRzFh19d44
+        tsvyd2wrf1LE11f7IlbiuF7jOGfeFGft9ghOrR43wZde+1dEzcpfFLZLfw2BdBlfiVCkrc0T2zmqY6uDRRc3nZ
+        z/DZxHRzktCXAMSn/9SlMQ6YBv5GA4/fJNkXdM0GCZejmvlwLvxfYuV79vyStaoJPImuBw8BxwbEE2Mv0IpyK
+        6JSFkDwVBjzh1k3KIMzD57kAXAdF7Tn0xUuRtD8ZLsIumkHdHiIsxVM4y0GFnl06af6PoNGXdfM1x8eimxU2P
+        UfCNNFH/oIsxr0eKOU+oBB2YQ39wK3BufMgG0m1BKtBjN59eX1DXEOghf70Pj6pa/JE7OujrB3pB8Bngd7zrWP
+        sf+As4F+j4c0f7G0xDvYICcrg+BtnoexiuBCU7VzQo1kIZ5jYVhFFHGnVD8FfgnKfC+L1txzbH1Bj0OO/AAWUFdH
+        4Jmjip1Mk5PgK8CHSj7aXPqRjunQ91XcF/vMwh5S/TMqrilefk79T2Ss2I9/qNV5lil3FkT/I6s04Zp/ZfEZzajT
+        HEw8A3MlVsfctJXnr5xgQzX/bSDUA56VZKXdjWN4fs/N6mtag4zVWpi13XXPWjj6IXQU6XxIe9HZrrcGl+ZCaA18
+        GSA30/2DFIqE8fOSyfgKg0Aca6AOYjg8YttJ7xHg8YU9VHuOVT3tPF+093WyF5ZN4B3NtZDrUu0g0RmELkF9oX
+        PfqBz4DoL1551G2Sbqn/t0ztZC9w1Sk7FjRxbqlz72s7eWWXexn99bRC0ST39qMYSKNoWSVsXrS/6dNbdW
+        n7kT7h064qPfIvCSF7OyBn4nBngExZ9WeCu8BoEHQM05QmPRrPmeipG+Q/1Yto9F8O3NmgwfHPWXgr6MD89HQ4
+        G42DQYGAfOmU5jAFyn2YRUHdyPieC6jXU42jwFcgCu3gnhMddPxFpWdh7JvuX+AyhO9SI0fm9cjWrXxYPjXJD
+        Fak0XFk3SmOGheYrMsPdBL/L3CvGQobsk21Ya9j004t3/vlu7X92tTkQibD9r4TRKXdYXS/HDGLcjqCGTJEkyb6X
+        BUy4DzamjzObCIkjwrkrgsUZZOD9RTYIJsYeOaDXGghzIos7AV00ToEBNG+2cbPt50BJ/sMuoy6hgu4I5u6o128
+        v3bq802RtRXQDYBD0uX/gL6CUHaEXp1Bk/MzdScBh/7rKE7FtU5lJr3BaXNS6nXT5FDJn9Q54xaSoqwi1LsB3Xxo
+        P85GD8HwazAINLGfVxd4fgb0SN1Lu4uXSr99Vrz7gjXAMHAykNOZdTzv+H5l5FQBZ67STS+5abmJH+n4kfN9In
+        jJw/C4n/wodchRdNdLt0Tp29p5mLT7ptprg2KUda7X+w4lJcbQOcTZj7x6v0nFCOC7dIl63cBov8uFznMmRCc5x
+        TeDW4ButL30NBXHgp3Bak6/dMoPJ3yUd8Q2XnlFI2FFLqTGmw1xXmvczqyT5y1/HJdITq0eo+QcfSvyVFpMHPY
+        al3ZsJ5o/tJgSLTAw21wXp0Ko0aP7bFNgoB5Azqsf1VLpe0ebTW4u7YwRec0VvLqYhZEiCTp2LgK64KXXIUsf8
+        puBoEiDImEli8YguwNwk25IfCNf1D/qYsx7iQAyKsHDLlnTyMsRaXLzQ10nIMd/I7AN2BCURSTX2ZfQ537gUMM5
+        nAo5gOc7DaR1oJHdKGv7OtRi80IB6drkkadrjqfSvi7Q/jsFRCFdhPdxZOSS0m8d4F7eofHOlgzSr1SISLPguxE
+        UdBNMf13sbwV+JD0/As8ALZ1KLy0gPQt4lyM8m4sd3LzI8rvRP9TN01bzzP0CUGz6HIF/AfuBZgnUMc4lwEtfU
+        3EAaHL8Uafzn465b4CXvqfiZW+lp+z7VBOejmB3sC3Qvr1d6L5T/6tg+f3C2A8d+qwfKryARj7Z1ZNIre9nva
+        i/C6c29M6WiW8KdEcRuIC5APVaRVf9iEXaqZ1gZpJvlgOhuQyjHRscCHYBfgfYk9TnS7rAhe5f3nnCf2XIYMd
+        7+Vu6jK6v+eibpE6R37AlDNvT7ufUygm6D6xXyrkhX3fxulEQSV+/t3XTKtDmXragt4lzJmTsBX4ADslZSMsiT
+        YCdwEigiIJO+NLJS6qbCXRhEsaBE0FO+1jOyvt0YMye4Cfg0C+8bDT8Dmh7ihrO8eTlsDs01duvOcsocT3Qv
+        rqGxiXtDHQjIYdiEHgV+G0Lqn1J27j+MWaeE6H/8cCxG9nUXzO6+V3k1R5G39JY8LGEjNOA9k/tx4OArot+58
+        u9qfezV17nLmTp2JgO3KQ5NVnekqe5y7Ybc4yB8e6JF5jXvrx/S0yYcXXz45Cui0OB79Ic6o8A2sZe0n6gc8o
+        q4E5vo6usc2Nx3kGpilUuyCdiq36lMjROazu+gPCyE51tlE4wj0R0aidipIaTcql0LWe5RLtvTTu249OfNytn
+        VXPWzXUwKDsXPAgOAoquaR2d+5EpxZzojVwUQvJWYEnACO/kIqu5eNH1TI++iuA0Wt/k1YX2EcDvcaactkFe/lKVG
+        etYoAtx6Ji0vw0cyvYJtibq0lHRCsdRkTN9DVBEYn8gJ76QfYzuK74P22TwElUw5oUaOEPalr5fiKFe+7TOoQ3R
+        cPJ7AIceK5GKkcSihPN0RNtFToT75sPRMZe0yVpkKYKAgeA6R6lfjRixp5P3S+HdFeh8JLoSDAd1s2fntas86DdG
+        sevQrw/4EnhJ57TQYyxIF/rt6BVG+aIg/tZSzxz6g8OAb6CIejn0t4NCSHb/DzgGDGwp2zC2rqXLgEMNL+a6daJx
+        M/CKw+RKvya/MUjfwJPKuQ2iF2go3jtQOLXf5enYvu+eXDHzOGR/beTM8uJTpvxchB9fkJG/AFsXU6fWJiv1lemGH
+        ReCT7kRaHN3yWzf80AQuSNSQTxh9WOibm+EaAmC30XBkX9CVFnNyYdyhzgKZtIbgsanXesAn/Xwu4uDg/q2VD3Kd
+        Qe1GSVn56IHfRRZuDrT10nkOH3oFIqUrpmLXsXgRW855A5lvYGDsR3QObUf+D1wqMHZK4ZeucpAifsdRfJIdbEe4+n
+        X5KJNu44R59H8qVF1pM8mQMtVCqVFUcfMlw8Fe4NPAhT9UwFyL/KRqf1I+9N+4E9AzpuOs4KWXeSrYz790LUreBHUAE
+        XCe0sOqRxaBVYmgEJI0dn++ehW7D7oca1rIj+Sb4j0Kw+2BX8GbueXYppko4YnDuS959N6rvr/Cqr43ijkO6cKNJ2bav
+        oh4Cjyvo/ClCsPkdojcMR+69Pv3UQ780t+Jjf9Fq9Pu3auzah/BhzPx4A/8uNZWeqSC80J2LFzImYu5EcZatvavNm+N7
+        K9FZFv9CmjzDx9o1A52OCpHHj/AW/Qk4EfaGvRyFbIPL72tO3hKaeL2FjO1+sg6GT7MW2vppnL65/mk8ioJB0jEfPVvv
+        Mk2N3TQesQ02sRPfUqygH5AMim2uZ1oBtYF2gdqrBNJiVJ05fsw9OcQnOkzE1rgt0Rx0l+48KnKNEQIBv+HPhddJZQ3
+        5Kkfe6YHBVYCL+O11uAtlk1cOg9J6MUGwwneQBUgPFATtkWbDNfm9GeJni0nEHyi/Gi7uR6qaX5j65yVB4CmwSMoGtpzoR
+        crcc/z6fjOdRp//OeS86hz8PUn4R9kz79yqYK/eaj614opP3ocqAnIJ+SanlSL5APac6Pg8uQL1ktTsxJc3H
+        7YS+gG65iA/2T3K8bSisyulnWPF5yqpClp2W/c8qeVP7cofDr2Cwescb28Twjtv8rnhb1kojGbqooozdaS9
+        0n7DqhOw3G6w90l9ws33Yr9tyLKQ+HNoHNvuIm4cViyi03WWxrPSopRmQEMQ2kx0A9oswVPm7CQumKKHJaig
+        fNvY9vGzlztJ/sw+OesB65ei9SLTWdRuOi120uRf/eqDGgAP/poMrVLyz7Jo16zNwXyPkJJXg6gN3A+eBsULz
+        HbqEjr2hkTD3adNP5aqVC0Sbp9g/gXRdJlS/9foXk5s+hkSLIUXXVUhlFCCsdTcn3Bw4tJCMnT7ZYD9zlNGTS
+        N0gV/b/Q6e9NaZPj+whYAPIlLXv5HnwDxoIgh9M7fM5lZMeBbBJEb+YsNNMBgVqykw9dnO+YLdGPCV4KkvlMNN
+        NHS31kq4bIZkvMw29MdNo9o6OTyJlvICpfdhpItd8+AwY3MLgy1O8LgkiRYCcA4epVYJbv2J6bp2Nb1CgNn6Lq
+        gjM2xcep/TY1wYQ+ssMwepzyGcj70UmBZiyr7ji0R+oTaXwqrWQnxnKZMNtca3gWg2KRIm+hxEB6DON2nILGPj
+        dUUAs3orRORm56QipRcRz42N0QkB/XwlMIHB59p7p0PjOQsX6+HeG928WfLXsvDGlHKExuubWh84Oeib1H+Ukw
+        z1MfpTgobH4I2AHoxk83Rw+Bf4Hjwd5h/XJpQ9YgsAT40VQqbwdDQZMbD+q0jzukiKz2+63A106lJ9Xj1iZzpm
+        5D8ADQxT1fep6Ox4PQ4E0utsnGy1h3gTC6N5sMv3YErgKmhgkOafu3n8xyrmMuewM5Z7nSjWU+r6ddE1pEvotbX
+        8qrgr3ATqCru82bp31tEEbDvH0KLs9ot/oO+Tm2vT4ueHCXAJyxR5s4tePNLJzajVxsTbJYSwbWCXoUaHUXmyYT
+        KkIFNwgTcGyvLYKoViGC7T4EKOpSDLo826QZ5LqIA+2eTVZLtjOHzYHbMUhSfjvi3By2m1tyDn5jo9g6jnKZNNC
+        Zov2fICzqP8UjS8Wy3q5+NlEdev/WZy75VH1HpybnWuo2BUcCRbPDSPa+IkjPXOqR83PwDNA1QF9JGAEGZJMBz1P
+        AoXfJXAXCnNNGN0fw6qIuGTpm8iWtx9QSlWYlxtwMuI97P/2Pd5Siscm2dtq8KbzudZl+csPqLvHKaw1lJtQP3
+        AGc9dhhc3TaniXT8ASh3OaJblpy4dCDheiHEAUOwuj/CpHv2ze17bbtcGzn5OrcsoShtqpfP9/PPvgOFFKJE3Ze
+        E6eWJQlEHLcL6aYTdXugu93xoNkf7YXp1lJt2Gwoju133BCsVPZg+w8DxaD9w7YdA+gONerFTAvrDwdyKILWZ4Y
+        NV/I29JIz8gEohLR2rmyIiWzpmcz6fsrBc6mHz12U03IgkH3cpBdt4n7yyr0OvRUEmOWeTIS8XpLxvhDTEG2iTY
+        +0jwW53hDRJTWyOWzGOFuA4c5Y5KVz2M0MzU3oBGp0Az0SfNqkNb+KXR2dmitFzT7g2wjqHgCPnkxdBH4C2gcOya
+        YnPNn2rx/h+Svwo62yyS/ndiZ0sN+kQuoUCdWyJL817C02VfTZw6PzUYUqg7yZHpnu4jsUNgIDwGCwaaHjpfuzH
+        OHWXB1b8VdV9C74wExNNLvh2C53O7Y4ZnU4ZgeETY7J6+T0MJDBtHDbEhbAjq9ju6wnoLZoLPaDI0AhNC2bXRD+
+        QJ4DyBlWREjLJrSObmi2sZqrHV26gUuAO4pFMTK91Vy6RhkHrRW1c1OTpz40rgb0eNlLX1FxqDMOeUVi3HSk0+a
+        XwtgdDARrgsiRLj9ZpahDp6OB3zrQudS/AO4GWnt5PEjfEJDqZs5N6Qg4FZ2B1oLmS3NKMUdHJkpVAC21cGgqma
+        FgHaeiBdOljK2XCpuVGPPuiHNeDz7dEHhv4nVjdyXQC0GNiLouIIxepVHHx/4+TBMbCWuFBeakKH4+9B2d5NAVf6
+        1pHnZED/c1TtesgiPLyPgDyIUmw/wI2C+PKdR3mdGu1/b5OLYz4pXn5z0oHVNfmN44sTPcTq3y1LnfxvMdggn/H
+        ejCtLMvQ0tXjpnVxYxZuFpzqoFDuwdLOvJ6k7U59SzVWOwL7cA8kC9FWYZwX77CPf2+pty+VLbIRy76XODRMWrx
+        4HzGK1UflL7Oo3iTR9O07+PhqaZ8ImjkjFL+wsX3A/km0VrqeoO1wN3A7SzPofw4GFiqueYjF316gE3ADmBnIEev
+        0bwdudRrbq8DN/WnsCeY5K7MI3+6M06xU3RZBfhdTLUm8ow8dM2ni3tf8PYv6RcP/OyJAgNAlMflitCm9wfS3YFf
+        FFb79u9BJ2cs8jr/1gA/eoPK9BNe0l/5MPzGkdNaU+Ykh78QmkbnPVp6/uggPRwaVwx9EBYHu4BFjuCIqZYYngV8z
+        09ZdWNpwaRcnVv6vJ1VcAgDTtiYJk7teJN1zR6TvDyZTN9InhUivuWbJuO4jJk90Iya0yyPWLDny6lPzAYtP/GW0
+        4B942SQD+kiFLoIXrOCR45AsahhHVvLWWzFyEwqV8dWjt7fQH4nnRVDFzWHPs8DNzV5+ZTGrTMMOnFqDk2iEtRtn+
+        FxkkcdRalQdGp98ChwO78Um5Ci9MeDsojIOHPIlqKvIt9+N4qvUJ+NFP39MzgOrAc2AIrUXQ60n50Lmtg8m05R25F
+        9A/DSa1Tc5a0sUflB5Gr/+GeA/KejzqUYfOjQFbzro4six+mLqattrntM6vsCPcnwo++pHAkGqw+p92ZC+/6/QcPj
+        dvIvAjdpvW9395itMc8c7nRPqoD8P+jbcMPQnLZg3F09et9S6PjI05KWn4OnPbJzKeb3tasZid4n5OrYij/fn9Wt
+        m2hO9Tq1lHls1PDtSV97YoljMk5tw0XGl7GcKp+f3c2MqjnEjK1p9MmMYqqopRvY9IpiymyNstg/eoK6XI6YDG+k
+        daLw5vu4yU+lZr24ZdueKLipn5IBdV9Tn/4502xym7MdnXQBd0fKdGFt8siXulXBNn5tjr603QzcdD2FDkBLXvTo
+        Plf6syO73FMmdkiuk8vw/5W0d0vOj/EPBl5nTerN17+IpEi7tv/yiPwO2+dkGiLR5OXg+lFBL+TkYl8G7wH8nFrpt
+        S9QNNVN73jl06hzg/Z/97Hl7qO85u6Mo3PwWLC6WxZlLXvyRnW/cPO01jzzmgSKRdUIGgX0hEFPTdo1h10Y5zPgpsC
+        nTTD1Aev66UW9lpzoCdj9oAoUQlpuurHfOFnrUocempgeq/wsV+eW5QiXZhXuYcAJ24h1tYvcji3l8XzHtuGuztMl
+        XWRyOwPd3ekAyhpd85PRonVj5g0wY6ovMU/M3reYenAzEGP5xoPZfpWtmGOWqyz2i1VArqSo3eZR5gRfJ5AtQhd1
+        /MeijFkKHhRsDxRJa3i0Tr4j0LEl+hbILkE0qBR6FSoTZfWI3E3P5isTId+4BZH/IFNX66l3ijPI6ER+MfifU+lJ
+        f5uvPsXsh07a9v39ZFK/EdANQa70az95zVmHwgNB2H4bZU7/cHSG+fYoHeBZBh4DHZy+Sik/B/yoOR3b0X4KUKdH
+        znI0FXF1U8P83XPJzEdPMRT19ovku2X4LlOE4Wo3UyZ/vXec1lZmHnqCI9+kVCRHV7Y7PYOSLFlAtm5yxgPRpLD
+        tQPsvgG4gPwK6EVb5SPBfUExbNLzzEKZPYFtVovKoXB1b+L9PbbZZ+0ChngacsHY4YR80cmonmJk4u00eF7q7Yqj
+        +QI8+fwJbuttaXX5MzRAzZtYdZnT1nsXQHdsNBzsWQ1Zrl8G+0QvkemG7NZd5I/8OUAy6LJdxi8GL0nLMdYJ0old
+        TyTfcDZN3Ipl6fLQZ8CP1rSiGPsWWgV5/8ih8Rr5jICfbxdsZ6kUyeoSXvjEnle3+A/yoSTQsX/2C+jHoZWC9oHbV
+        034+uNOPh/rhIFeaTYc9gH55q0WIsTuAySBfknMquzQsrSEvh2UK8CNd1J8Hupg3eSogI1CvG0Q/uqE5jMTAI/wG
+        p05PHNKP/0nlkLsp6/kQ5s5AEdkwepjGdZx5ktdx8Y1Ph90cnnJL0fVu8BToHKYb7Vpek41ugkHBg0HgNyDX6xRd
+        GtFLlMYABVreA48CnXd0/J8Fcj5H02d/oGvolaDRJ+6886e9AtSAYpFkvQLOBcOAzkPbe8fNuZwaOTLOutmJuTq3
+        OMSR79SJzF7TyKnVDwlMSP9sY6C+TE4nl4mZJQgnBTI2Z8M4TmRPL6h/5DZ61u1m7Jx6Z/uF+b0iqfE+jxZGVV9g
+        Rs162oyZk/eBnb5RGG9OizTmSsLEvqITSFSS85LTYx74NwZTQaF0WHNuEpRVNFsnQC99SUUTh4S6nbyMmbIuivcB
+        OcjHgGL8fGhRTIEuiha46eh8BSNkoluQT15jbeGVT91ffHidqpe8/MUsM4geW8rhuitMLu3nADldDRF7h586b9Sb
+        Kl+aQe3xQJEaRW0c0lq6Zl8zyZh/chTII5X+Wzs2cKfU63jXNpUTISe3FsiBaPK1DU+/nvAE0clu3lLkGbgbmBOg
+        wB+dMWkf7eE5xmnLltJvW/C6p7+7uJTCneCX4EZ3gyu/bbZxWqId/XSj5tCVYTrA9KrDGJI22ubwtQM3Ax2vpaBq
+        hMr2chAjBx/D5ultQ+41oFBajgBFokuiY1rn6RV9dsG5Tebi3FbFKr9ODR6c9e6AT3sNIlpb18ixnWAa1iN5jaYyk
+        42DsRmn9mE/nmavGzWr/kAcNac7UddbzFje9hxTfTyO6s1pXfRFhKg0umYtZPwXB3eseXJ2pMfhbtHcFByQqjLpt0
+        3d9Stznv3lJhCVfB+ZZbMfwreJOkAAn+5Mo+8n2RSK0M54fwjQRdX67e9GRJ3u2qOSbhAUuVSfwHVZjQYocoFxda7
+        4EbjplHyHQcg9bkGu/CLyB/jJpf4SF583qxP4Vn79ilWHfCdCV38uChAMnxxbUZOPo1OniE02GgVDD0c8eV2k33R
+        1+q/T1hwp4+oGSw5nrlRHB0Xbsl6/nHnA6xudddqdFL4dQRD9wuErVcrAitz50QdUuqPSz3qYcj5+6d8P/BFoH8+F
+        tM3K7vqFTlrS4r4pCFwuAd/uIAr5BqDoqGvJtCgCCuD5kL4jQfqpUrH2OeT1Bbluc7o0oleKpY8jp8nd+hq1P75
+        hYrHbHIYoacqk1q16bXLoG96pqaZ7MmXuJ8LYMGYsZu5MbGmyPfa4HhPsH4vFqtBlRBR9SsqjKG1FYpZ5av6GfDWWi1TsK
+        1NbfYxJGj7tlarhJbGTTcfKZGQdhvX63gyrHG7iiX+a2uRYnNy7jZzdCMSa2p68avddrJ/5KQL7ysQS+tjIZYjl5
+        HPa152+7I8fkh/tlCOmH8A3BhwBBiNjQcR+xWJLf3/UR9hk6l536jnetgP/ofx7py5C2hUeXawvATqJKprbJ0K/Yr
+        JofWP9U5QVUpetyOacqw7ocQnbbqy7jbmuCnQuC4vsPES/8e5+JcgPycjMtm99muHTjcgWbj3QsYbyC+66TH4e6Zv
+        gNHgOBg3foSWvY8l98T8EucMy/UqaMI5uTu8HiTwGugndrwO1UfvCuyQib6cQvpKes7GJbPHbgPFHMYeU2uDT06qd
+        PHwNTq+nPrCIvCqgY/9n4JNAxqYN0uNs9NgcNPgGTdmapwYd5KC/ymhaMtTdNar2/SYE73ZUXtukwb/C16nEbrqW
+        rAeuBov8uxZcuzUSLgfjMzoXLFAC0H0GycNZhOncoGvlceA3Prw3+tQVv2p2j/W68SLZ9Byjtj/O7bZ2jyBtiNTe
+        4Y7U8mmqt/iOrS5EgcQGOCITqVWofu9AxlI3OBFYfb5rdPU1RumomkvJP5B2QkdXzzZjam4wo2fvZ0bPWmLGztsg
+        L5U0jqK+o2ctIgJ8rXm6Rs5CIOHYbhrYuBI3sK/cC6LQVYWYiQG6g4kRBvoant+CnC8Yhejn7cv4Oql56Vw3H4
+        2HA+kbRgto9EZG/fgVhfA6mu7hippnrHV9lNgr30GQdb6PPFUd4Mgkr6jcA2AhCKOXaCz5kg3GmJRR4o+Ojn4p
+        PDHwSYb3EdJG52LKWguo6K8c3yvAbiCr4wFPFXBIUXxdUEtGyO8EZjsD5pGeWCrl0GXvEH1K+p4I4+4cMPYy6h
+        uu0+QrPXyN2v1sA38f0Gh/cfPRpicnB4NcX0BUhPRWUFLbuHX15hn778CPdHxrKUXDMUD+QJBLtDLr0yPkbQAe
+        Avk8faBbJPraO+9Cyoyoc4m29+3gSSD99dRUEfzfAIJ+9US+A3CTlqpECuQ5MgpKpyd6HZSLYyte/YKZ36A8L
+        v+F26nFyZ2RmmJCT/JMdlOwMOPY3uInt1nqnpyrOyljnqg5DCe2/iQ4uno6XzY40jxRfRBLCFK0/Qwn9xEc0l
+        lpp3f0rPMb1tzmo+Tomp2R+zn4AYf5V9xWNxxMjjhs2jn1vQmLCDisK1XKPqOD7B0QhQYWahwG0WNbPQb9K7gc7
+        AL2yqQ9SctiG6HHJsBLeqTeXjYg3RropJSNJsOQnhOpLoqar/dRJlUN9CW5DQu1c5T+jHNyw6grMk1+ISmKLPEg
+        Ym3gvcDoYp0+Hkl7g2wXb134jok6ZqF8jPUFEOmpQCjBc0Kas/6fnNvIj+ODBCNjrEumsh+Dkj1qRraOMd1oRSE
+        5bV66IWguhdYz0NHewVzlkgYlGOcA11jurI75husJeTlSblK7orhNiPr1wbsZ5jFNGDwV8CkKG/VcnBHbkLxO7
+        hagNZzaT7cA+UTkPVqFFxnjIxBGM2l8BjwXxhTQtm346Cta6S/b3QP8ghEB4iNXv7xipObNoeGaHi1fbV4NGG1G
+        vNffcnFuWZtbV9WuUqH5BpLzhSP7pePY8vJYrdbaNjD4ZJh4FzAl49RqsX7zOwf69uy4zHqUMbNO4ysG/dI/tjC
+        6+t7092hHz7qiPmKLE1vvhGoZwVXgpfQPMrhOHj5TzF71LG9hjq7+R9pxHjVrPOlgdyd94stdtvl6C7CvDAJRaC5
+        MaaduZbAdcz3SxyhygvqCB8F8n3a/qpFee8Gkm4m3/ZgzdYriNUSJvP2LVWaM2zw6FPy4F3k3e2R+4+hL/VGeNm9
+        RTr0ezTYLMZbWuTqO9h7ZBoVX2+1N4NAEMrtn6xfWTn9FbrykFxbdj3XDROTchuzR3gF9yrrx9HP2ns55wIgdGO9y
+        Hz2cqpLe7N/4jfwAAEAASURBVDGIool+tJ9bfRhO9WFqsoYYnl2A10ndxS3LL0+fy3zk51slp/tVcCO4EOgp2EGg
+        wVH30yGXOmR9B0pFed04osz+QEEHXbMKpYUIKElEHLmV2WwNj3e/fClbn3zaQ3eI1TdZ/fyYiX0QVTCLZeK4rXel1
+        lmn4cBIzjZX4ISt3yAjZi6PDTSvNJT9M3dhgI1Yv6G1qseRLvZnK2HtcrSunZMw+vYsi4hNKraWSSbXIxc3dfrod
+        EwX6krq12ShSW/QmbZ6xJLLKEv3/Gnv2CLW3o4wscRQXFiF8sfh6D5qxlavIaGsT9baJEtNLZD14Mp0uZT9qpD1l0
+        1HLu+atX3UG0DdNHAk6OLT7lfld+zqhM0xEUh9aSmpg8f5QsfjCR4NtLarUDoLAUPBHKD1b+6LQlg0eAm8Q9jH3iZ
+        tLtqMgZxzb9bzA7qJ5zTgrOvTE4yXsKUeJUbdH+jSiL5uVKovKNjht7bOhzWvqkkhvV6j7Wjmqu3Yx4dvoU9dsar6h
+        whaGtJWjKag49G7bty7n/yErbTvNhD7gvapp8AODZX1mdNo6+WpayjSJif69IaKwjOrIOLnQMunrgF/BVq7KWdUN+f
+        5LQFEgIsec+WLnc3LJ2B7PAn2Rxmde/4G5JN5txtVWWkeHPsha0JWzhwYsHt3oCcf4yJ08+5DJTn+Qh3b2OTJyxIdE
+        ocRGpRBIhHW3mLmdwuuFzOPy7fB/NoJHXouPtD8ySn4pRjoXDA803YzG+FdP76S1o2ZPdTs12u+WZxa06SW3WOG9b6
+        N55InmRiP97q0P5s5/QvXkoM/xgk1xQkzdRXtPL5J/dqs1WtXdNub9bZbFEXHYT2fNokOyIo9zhjDuXGYQvT2PKLJe
+        d39FUWn1i9kPlO4tfVPI6cZBJ1UQ88BnhFmU37dU6eiXhrp71PvrqpyF0qQ1zotbwS+0QU6nzE5/yTB0/QdBAaTd58
+        LF4TI1M34NyHtpWhaxyV0iisfmGU+E2ncEUx1MR1OXtG5TV11UbMfw1jnw3wm8kq13voPjPe9Z0ztq0cxv93Ag5k2v
+        xsdP109ovIuhj1pnJm31Ggdg2ztjZxrv3aT145q2wZ0czNl8lpiM5XtOgIocroX0PKcjkA3MmOBgjKlJgV7dHM+iXE
+        vBrmc07y6+d2YeXnyKX/Gfhh0Do4kj/7fgrPAdnTQTewV4CYgR1XnG1GqPmnyX/v+YfR9tUlL4RU6vs4DWj6xZhZ
+        x23va/QIlHpbci1l3gNWW/PA1McoTcG6DDNZkVL5+cMbMVSoPZCveQaeEGOhflehsjiHSGLhxMYruxq5N88diOsB0
+        wWw+Sn++q+Ycc1DPp1gve75JpgaZgyoH8ULX9yaR0EH6hFmwbIapiA3GyRTOMvH4r7HM9UwwCQ4302q+MYnUI2ZYz
+        0lFU/yArtXm4MpDTDx2QiYSfIOZV/OhGTt716KN0XYEvclUqrJM53kO8FJe0LIM3yLNudwZ/w8NFRXw0lPYrZFzwD
+        E7GKaLvYye8i2UP/HUFbvotz1fKNYgzHsSeN8jb46n7C72oDAK+wQ5GG7eYuWdi8osdM12DDSMCe9kCrsDpQ5tQka
+        OwrNATqnmE4U6BzDJwflXQFtB1eivfXIvcAdQIORKsCn1/yF1k7aX9zq2kZuhyHnftaqMUYNupY7YBj2N8joW33nm
+        7Bcw8TrD7i5dKChIoMjps+AHMBfomA/zL46hfUOg9GHgOGZk86YO9PwjOCtvCcbcR1/5HsWmdLCvWELZfz4FI8G5Y
+        CuwCrJ3Bjr+dgJbZnAo6dlgDXieIy0qcV64GoH7uoRq3DCSU+6mp9yFYuXDdryGMfrV1YzGKBc0VETI8MnhB+t+jG
+        8tVpzaunjcHBnbwMwK6po5cepxgnNgncGYuVyMg0RHq3967vpmlYr2xHzuxKk9lU96PcMnuCazrvZPJhE7z9TVsUF
+        iuzCZPxM1/WtG6Jc4v5dRR9SDT+SkYvty2rzYrNpLB3fx6aDKe037im3S4+kTPXXJV9PrcLN8PaH4ipSvRPaZGWh3
+        XRYNvRe8LOxtolk3ZrVZZqKL/o3gAKBInpfe9FZQ1qPshE+9U3UZ2+RM0MghdhqLmCrS4nVavi2i/CaimNMTVMqJC
+        qKDaPhTUGMJ6tfMyPwpV9nMRbbSUoRxrr66Pshh/Buo4dysF2b2BPsAreftB/Tylh5F7gr+AN8bIGh/UFSvE+1FJ/S
+        fAn4FdgTa55qcg6nTMeB94lCMx9dB8wlybIPsEyQnn/qgwMolbANtZ4dWdzKZ9FNPWcVcnHAu9+FfO6JdDtm/wReZ
+        9Ajq+gI5pN+AQmmLfAWgzzz66hxYbHqx2AK98tD9LbAYvA0mZvBf0r+CQN/LKyfH8jAPv6K2vjfB1OtGpqeL/xv0iv
+        RkydUnUjaSYytJfZPVN6DEbZGkwpRcajrPPacrhwT7eZwdeaB5NUvffzHx9ImZcR4Humg0H9XW9jRLkijcvgMKD8CRZ
+        V1RXXeulRubVHIJjus6KKMNI099a5YldCCdQ7t0/p6UcmpzIqv3mN2jfxMxLS+Xf/t1/8r0qfwZkdv7iRiz0jZ1mln
+        Kh7+0fMKSY4G/k/G7E9TTgvfAy2ClIo6naUz4spBJL6BN66/OB4p++l3M2N+bkJyeR5rUGqO1fHIywhw/n275VTGOI
+        j6/BO6b4VKdzN1KXkHhduD3JEp2LEmU0q2AK79JJl/lqoucxYaaw77gJuC9SZDDMgQ8D/4HvgTTQQ3QfvEauBRsDoJo
+        EQ1+dgriL0X9Ax6hq3LdWc1TV6yiomh+VBLn3jOQrreyt5e4rpkXmLOieyKueY2Ia14T0rmjWPQhgq7xCmPfmwd0L
+        tGNxvHAewPi7RJW3jusMULbKHh0/ioW6Tgppg2LpVdBctiH5D+u7xFyFeX3aVvVU6/iHp66Zz3lohUjO7Yase9um5
+        /B2S2yMssnJ8yc87vMim+R/vBwoNIYQZ/pOUQM7NzzSc4MZC5Fw6jqv5gDK98zsdpKs2zpaDOs1+84rZ/PSrGDzar
+        tTyQSOxrn/DO0+whH8kJUuJS6nuR3ZnnAIfDiVOIMDOu9m3lmUd9SqNhI5s5cxIdVHsfYpzPusrRznax7kujtA+aZ
+        eT0b8a6EBfahWqY9HHzhmv7H5PvStgPQxXilI+at6OEJ4H3P5OUADqL9GVe938VXF8VGRJ83weFUyiF6EEwErwC9
+        sPMuabMR441mMDldIjlQHBulJcasA6cyylpADq7bIbyNtndKq0Ej6QMzJfd2bMSQrYC+S8G58O0OgqJ+ErO2/uVI
+        d0h+jn2KzX4PAr9yCc05uu3qmy27UQCDbnhKTe0ZoMnxmhm0N+lrXHN1rByUqXOSt5yMk7LNuPbxJLMw0nFxA/h5
+        2D5AWy24D77B4CLwBnDfrFLMSl5nPWsHNwPjf0f5l+66AvN/0rwKlFGO3ddBKe1nbkpQWA88xv7Vxd1Afi9PeZyn
+        3HLFmp4DuvITuu/n8hmwGfHKS4M0ZvIbgvT3ajOf9/pdEG/R659d0Cf9U7gSrBeyRtccbt7kUdmo6k/4fuyQ9K+I
+        ja6ek/7U1qjqSSxRWEh+JEjhRH5L+an6/KyHyB9F/1OKrmM2gaOrd0yvAZZO9XpNT3+OLFu/laCd/ao/eAuMB/lc
+        iNuklbBFHOiFj7uBnpRs7J0odf8BXjrPy1duZRTuAe4F+gZtRXPrx5i7gC+A7KqTfLMQY7UHM4BoRDEGRU4CKOjw
+        MFgC8qUv6Xg76FAMvQqVgR57gGmgGhTTgWlQDbnaHkngR/MbGEuYYWCt8V7mp0BI3Qd+KsGvc8ZNYGlI37AmOal
+        5EUL1WTp9b/dGoO/b+pG2pZbKDAdyrAoiZFQAv3Mg1TnRx3A3+3mooMlH7My8/i+LJb6iPX18kWrZkj415qYrIg6
+        VMxsB2NxpXtc1ey5csARvu9FanUBBDMJhETt6jbrq/7iZmGE7ym+Sbqd67mqmkmxCWvq7+rGz1za1RIfbt+to6pb
+        tztKDz1lL241PeW1NJHQpcRfu+mI8lkl2Jzrbn2UHugtci5m0Q9F2tHemDj1TX5GONfF2RItqfzIHVJZkzYjsE0j6
+        md9lS/6LTrulefQZn5T5u1mt1wVG0V1L1gI5WoBj8ha6/MbTTV8p+a2nzhbLwAKZc+h7GVX2Zjs9V2y1GGMAMnWh
+        GgZ2BHHgR8uo1BOSh8Er6NKcUWs/fZrUMZduVK6LbuObNBahAvlyrtyRYbdUPXbn2lJaQgdtnxPBHTmOpJeRJvj1
+        QeZq1I8EvwZB25+mBvqW3NnI4/pYHEKHfkhaF6wOFBXUE6enGUNR4aISY72CwPrrau6S9V7BLujlHJe5SyjjHthG
+        Ef99Iqg4GR7tN5Ue3hOxzT2euqIUo+yYTQbqNn/a7ETnxJCYMZ82afSpYG9j9Vbq3hmJyqGe5isxTtqpzdRfwERL
+        79RqsNrkBqYdywl6dJ7H92n3Jf8TzmB3NB3Klw50stsRp3Vr0hmkCqEz3fRnz/qQTqAUh38VvpZwZtrxrUuu3iJ
+        OLcqY/brMMu0r90InXUh0G4GuqTPMj3w5Yczsgek6+89aIDcL+D2i1QXFUnla4CKXWn7bztWcX5Zz85fgOrAzEj
+        oDnQv3BL8CvwEng2NAN3i2zfCWnVOLfpzm02s6S+LUSj60Rn3i+785liJojklGvxucA+b6auJfGegXIPMHMIJue
+        spzE1Awykua34tA+8LG8BfNqdVAyKsCb4DHwD1AX2spulOrsSDt22+nc7n9kzN3OHq1Sac2Y4qoS802g9/r1Grf
+        fDUjp+iJnLW8adYqlf2WLdZ6uvSdfAQ5sSXxhNm3b231yzi0P6PDG6Tpg4gd4HXw8whCCmfRi1b6pNfYmr2I0P
+        6e9aq7p5cVmNg3pj3rEJcmv8+sX10fp/c8HN2z+frBjcwzkXYeU3zWS+uOUuYq6u7jCwr9zQE9vytcsQIlyKEd
+        M/s6XnY7v0FSzCxBz7PMwb1vb6izGWuBLBbguNT+opO6m27nGD3VXWHz5WEBtlcNmvTMaLMd28n3kXJ5aNv2tW
+        B7aO1qkENXzfbROtdmI/RZh8HuArtHGHQ4+j0WgS/Ngmw5ubrBqQBy6N6l/zzSNkPM8WAmcx0YkGVSulnSuVPr
+        6+W8tVnCJv2ZnJ5Qd8xjkqOwT3qZQh59s3YpyLGV9JpO/dZasmTZCzh4G2YdDQZ+yWxBom/lPn2mf3oHhtlEfZi
+        g7rb0Uo/3pRY1F4/GsdZlfvX65qDen7F+9mwOw09Mov1HvDD2BM7fJSjHAZo6m898ncPSBBzZWC8GJ9ye/q13Ir
+        dGkZD1qX8XXnROVfP/cpzG8rqIjK7+DXr9Df1W3HnHzEPo/GvmvqB4BrWS2qoFODb3Y25PeeanLyZwXFgqNwuwv
+        fT0TA6GqB/bSecrSy1kAbbH8Qx9T8DwinrqMXqzE3rpCd7fgaLuK64PKzTRE9Od0O+jFVU2Jwtguy4kfwDbgrXA
+        TPANWAQUmR2H3T4nXWkImwxjsg+AzjlMWg7/z7BVyaLZBTu2msxPf+y0w4IHOrxd+1kikrxYx46Le738RKd22+t
+        Jf9qx/Q+TPCpdKPW/cfw84Lw5v8CbXmhSde1x9tZgj12PYRewpKAb5Y3YhetwDDepb+OnbWPpdUVJ2pdTR5r+1u
+        MnaL7MHNzrylKrnJf8J6oPIhr9H/p2WtE/9qlp336YGdp1pTr4Vszf5nKxACetIfCPAdqH2vR6sVzsUo68bKst0
+        Ot1sArozPl0WTnqubLoxPY4gbneHTDfT9g+ejzbYoR+wxn8SKBjXA6bQy+i255OwabWAtkswL6kJ+1PgO7ZeDPt
+        /8c+dm1E3rzY/O7YchbUYf/FZ/a8Y36sw8DaSCfT1JIlnWr2/KVZ9uqbitbKe9ddUGlp1Jx16tee6iP1yd+adsm
+        vcWD74KSexo3rw6QH4cBqve8E8kfgtP4AfoSnP+kz1HHB0AsHsSPh4zNf/MJKuTq1suSBlWMw7oHkFqtYT0TIly
+        17137z1rGHTcMswLH5PO16pMqxkv7GbcnusMP0sG3ZLcC2mgTXq0AXjUjn4exSLUcBFtAj2iD6PqihuerZR/Th/k
+        MYb21wMdAxPhfo5siStUBkC7AfvQazbqwfA9nekdJ+V1KnVopHirCKMYhSE83G/ITu5FSKB/jzEsfMGNzjSF7JH
+        xrE36i+Y0fT49brX17lxKN2b1Rf7IJ+mWu/XvP5LNYezPj49DdgR1ePI/+uqWh/J0sRPmNN7bHEYnfGeR1Rn0/dn
+        1ZDL2TVr6l9n/QN2s8yifhO5sBebxdbzZLIG129Jw697qYUdcsQNxMxTmbDKq9xamxqLWAtYC1gLVAcCxDFSiBp
+        CajwkXgvF/cTfOptlbVAq7YA+/3PmADLINNfrfC+MPYl9Vr/X/L11wU7tnUTDN96U4TTjK7YyhycGjy4ourVSb
+        fhBJ5EXRRaFosnjupX96O8/dLRmOpf4sR+bJYvX8zLVbfxQthN6Lg5Tt+hRGBvIT+SCOcyylNRYn8wA+dP
+        K2lXpx4nluUIqdhME+dlsQGVd5nNWlFUxNe5ZYYxPgPTrXJESX8prXRb1Eq2FrAWsBYoWwtwkf83yh3lo+D
+        VXNwVJbVkLdAmLcC+vzoTU3BwfXA1eAt8xn7PE/PSU7yQIfghV60TOgzveG6ivTldsmIvv1y7RrLm5Hgs9jv
+        qkxHktzfJukeq4pXnRODNj0XfeZVTmlzGGhCWG8RiX+PAbmBiyR44d/Np2xXNCaGnepFqQ5DEOlLfnsxyeKtJ+c
+        RX6mNevvpnq3JqNZdhlS8wH8+yBOpT5hQzt+YpM2aWe42VeliyFrAWsBawFijMAkFLd+oKE2t7WwuUtwVwYGeC
+        IWA9oF8cnAyaxamVZQpybOtqzUgtQeDvktim+t7rCuqbrL4hHo8dTNBz4Ypa/1wKPfDw/4xze2vq0EP1CKe4tGz
+        J780GPd9P//iCfqavY6ercOpG4LhuQfoSHt4I8A3lOaR6aYzlB6keKNHFJMwuOIVDwXh+MvfXxVWsGaXJuY2n
+        1w57bjb4Rm8q9pJ5YT5OvSVrAWsBawFrgSJZ4GbkPO0jyzq2PkaxVdYCxbJA3ksRUpPMwGTSjEeR8fGBZvtYzP
+        gerD+067NlXbt2z6cWL+kdRWkc4Wfa9TKH9a6uXhCFP5RHztrC2k3NsJ6vsb72TRy7scYknjHJ2g9NLH4oTuyBOL
+        DHkj+C5QkPZWQ9QnoYjuxk0pfBqSZRsaPZvxsR25jvHOFpPTSq+kzmrTUwjSkW+4SI9BAi0lWNG2zJWsBawFrAWi
+        BfCxC0uYK+x4J1wXQwkOjVbFJL1gLWAiWwQN6Obe148zjO7LB4jJ+MG5heP+GrHgd1x+SMmVNmH3Vq/2Wv8O5VB
+        EKpSYkOFcNWW/KD3tTMj5wXxp6f3c0sSt7EUgKisMnNcU4HIfAZcBpQdPh7sBPQG6Fd6iO16e+r1RK5/ZBo5kd8/
+        eBO2toOjZl1E4tEzvaZ0NemQ3wQL9pN82mzVdYC1gLWAtYCeViA6+CGdPsMnIJT27auJ3nYw3axFiilBfJaisDa2
+        gE4tQfxGP+eMKc2o/gFsdVX69/rhcfNqheeFWkuLE3YonZp7QczE5V6iSs/aoeGz6Y685MK/RHAL4aliBjrBxdSP
+        Snz7dr092v11p7eWtWnvGpI+QEGRWVTT6edWhNb3OacWibJp8DOw8EfpayH1uNX114yzyzq66m3RWsBawFrAWuBPC
+        2AM/s5XScCBVIsWQtYC5TQAnk5tslaw+NsMy/e2VwYpht3qXIq/y/NE4+bLldfYno+8W8T69BBv+CVjbonk6knqu
+        K9rkyNHJm7nkN6zjOLZ++f/nnZRK8RRCj/hLO6JssOHicqexH5B1Dgc/J74OSeRGSWF+FSHUz7jvCgc4y1t8N6/
+        S6bkq2yXd8O7tSLJRj8LHBT2sAsWfyS0Qt3lqwFrAWsBawFimUBXXO2KpYwK8dawFrA3wI5L0VIfWG6Jn8y03AG
+        L05sZbQ4PpBwbO8Hx7gZuHOdWzNo/52XvfbO/Xzvdlt3W1AeJZ83q3Y4qt+CKr5OEJFG11zGL8o+YRLJjrw09jq
+        O6qH0PA5Hdljmm7X31EdpY6ypTZ1B+zM4vay/TfF5lsTe5uAeWprQtmnM7IH8yNo7bMuOTSfKzwZX9NrdHBCLchP
+        StLutsRawFrAWsBawFrAWsBZoZgvk7NjWTTTnEP0cEd+Sj17F0j+z6asyDu1AGj4ibRRtxbG9DZyW2myz9lWf/v
+        DHWCp1HksPGvH4CmTRfUWi4oTVan94IaC9cfXomrVYVsBXD5K74rTy87n8vnNMyw5S7YnO8tO5KT49EZOj3J26H
+        3GCnzcViY9M3fI1+PoBL5mtJDR61qnY5p++s42Zp8xBlfwiWxt4ac53grbSWsBawFrAWsBawFqgLVkgikPZMN/0
+        p71S5kw68bONwU5tpsM1Xqc2U3+/0tjkycvWSFZfEEvEfoF3/W2mLSxZo66u9jk+CXZjasCADmGM6bZhvb7nO7U
+        9cWZZT5t6E+d1HeqJwvLzbzG+vxuLP0Yd9WY1fqTgBOqmmWSy00rl1MpQw3rfhuP6qLJNKGWGmieqb2hSbyusBa
+        wFrAWsBawFrAWsBcrQAjlFbPnE18F1deZ8fmFsl7C54NAOBuO8PERqvwbre+treg7ounTu3Fvoc6y3zb8cm5hol
+        zh69WU/fOzfTq0+9bVn1xrz5OzNzfK6Saai3bb8EMRRRHBHmDUru5tp1U8QKP44vY5WL0vt07nRd3gD5bbFBq2n
+        Xbp0Co6+Xqzzodhx5uDK9A2JT6OtshawFrAWsBawFrAWsBYoCwvkFLGtS5ozEnFzfgTNrw3g0eL5JtRr9pfz+yW
+        rj4vH44fRqK8TZKHUwLrlde/PiFeeF/iDDnJqRRWJKtOu3fomuXwT1taOZv3sz8y0mt+ZVMWRplvPS9M8K7NTKw
+        Ps12UWUduQFwFTt5mx1RunbWX/WQtYC1gLWAtYC1gLWAuUqQUiR2z5xNfa/NLYDRVb8uMFIUTUdRjw+5QUvlNsQ
+        /BFSHczY9XVe6d+qr0JGUeH8Tlt/KDD+4mK+CmrLf9xglPnm46as46J19bwAwQL0k7aAZVEKC01WCCVipnR1a9S
+        3rWhrlGGb/t277Wz2b35fhav0fC2YC1gLWAtYC1gLWAtYC2QxQKRHVteGrsgnjBP8lGsT8Jk4pC+B7bz8uDQfgL
+        4pFY0qqros7epq/snL5atk60Hk9CPKVzfd+0uf4h9882SbPy2PcACo+ZsxWd8+VEKnFxfil/Gd32v9G2yldYC1gL
+        WAtYC1gLWAtYCLWyB6EsRkqZDBKd2iJ9Tm5nj/3KZa7/aH5+N96nYHGf4z3hZ/GhCMOH8VvBi2++rvl04cUZF5e
+        BgTtsSaoGDe4znCwm+0fb6fqlLzdi524TKsI3WAtYC1gLWAtYC1gLWAi1kgUiOLS+NDYy3M3xFICtdFMLxdEibb9
+        PqP/ywiLW355mK2I44t+/4MjWqTG2QrEuNmx6vfKiqU7+1GzXZQjQLxONXsGaEewU/SrXjc2h3E9GNtN/4SbB11
+        gLWAtYC1gLWAtYC1gKlskA0ByUWKVq7E9HawX6KEnVdQP1rfm1R6votr/6gb7J6p1icH1gwsaqsfVKpw1NLlk3h5b
+        LLU2uu2Skrv2VYYYGDeupnH8esqPDkUmagGV0Taf2zp6ctWgtYC1gLWAtYC1gLWAuU1ALRHNuk+TKCFmHR2nE4t8
+        sjyAhkoX+qX13N/Yk+CV5AM1fj4C4NZE43pDolU6mRM6YvnjIj0Tv0hbdwOSthazx+e/isUyPN+0RvLVkLWAtYC
+        1gLWAtYC1gLlJEFIjm2sYFmTpjORGoH0D40hOftkLacmuqXJ9RcnOiQ2ITlCY9n68wz9bWTyeTDVbFeb6dfSMvW
+        wbYbc0CPZ1mOMD3EFOuZ6TWnhLTbJmsBawFrAWsBawFrAWuBZrdAJMc2glYjcG4D3qRP934vgoycWFZf8sPUfqma
+        QyoSiV345Ncr2Trj4O6Yqqt7Znqs1xszK3rtkY1/pW6PxZLM3/ebww12SZmLWWubaCjbjLWAtYC1gLWAtYC1gLVA
+        C1ugYMcWh7Yjczghyzw+yNKed/NqtT++2S9VPTiWSOyDg/thBEE78+tpL1TFKl/hCwqDIvCvnCyx1LOhE0+l1jBj
+        5uwdymMbrQWsBawFrAWsBawFrAWa0QIFO7boejjObcBPsbISNhb7EoQuZSjGfPV5sL7JWdvp18twcLP++ELKpHb
+        jCwovT49Vvji9os8uxdChTcloV/km81kcOqdU3fGh7bbRWsBawFrAWsBawFrAWqAZLVAMx/b0LPqG/qBDlr7BzZN
+        T7c24VIWbQS+Y9a2b9Wjfy8/YDAf3cNzq8F8jS3dO/YIfgnidNbjP4uDqO7xhSyrcw7Xt/H68nBcz4RHwmDnIjJr
+        TvW0bws7OWsBawFrAWsBawFqgtVigICcOJ3ALoM9DBRLO5t/BGYEMhTQ8ObcH31XtY3pXfmd2jvlGF2ckKocmk6mL
+        GWanKEMp2ptC5/Y9U/f2rq7WZ8pWXhpdfS/raPnEWgjF4keYYb0eDuEoSRP73VEI3hewfNroCw3twVdAX+DI6cdA6N
+        OmCNt0YULngw1BLVgG7sAub5FaWokswL6gX4G8BmybmfanpMeyL+hYsRRgAew2hCYdQ7KbzjHjwInYbRFpKNFX31y
+        fBeYCHX9+pPcT1gTDkDnPj8HWtQ4LsL0PRtODgLapgoXfgWvZrtr+aYLnRDLap/T+Sg34K+1fk1oqgQUKjdgeEUGn
+        aRF48mPZv/scc1Dvz8ysORuYMTVDzNjUKl5Bfeuqn1ojVbNzPBH7BU7rU3jyOkkFEksUNjap5M3La8z0GfFeN1e17
+        7VxIHObb0h9k32KqZ2z8xSfg5PCg0jVTdWxYCNwG9gaPM1J5A+kKy1hG92QyQb7gGPAe9RZpxZDrEzEcbAD89W
+        SoodAf6ALsM5nfYGlAAtgN13XxoIbgex2IZDt+oBQoq+W5W0K6sBPYB7QDebxYCugZXlLwOpgN2BfwMUIrZk4t
+        45C/9eBzrVHgj9R1+DUUtaSzLtJZoCjwb2UrVOLIUpFhTq2h0dQ7PsIPIWx6EcFDuz5oklW72lGVx/HEoVVvQL
+        71laP4yWz/SvaxzeKx8zNOLkLvTzuMg5ul2TKnGGWm09YpvDczETlgamRIwu1l3uIVpCPKdIXTqlokfBwIXm3O
+        ieHGZwonkPKL4EuHP/HBSbrRSjvUSN2RIcW21+why6szk3ld26Vm1svxivoyZBbdyePzM5OPiiFp2NQm+ppb5+
+        NJ6x/Pm2MF2oL2ou5z1yDjq+xLyhaPx+8TPlSEHpcZ9OR/nlTMedXTFnOhJCp5W03gDHY6zmwCNxF+QEgJzUbr
+        QfD0fQ5CPwanEX5+UyntymfA04Dit7JYQ7dFpl+gYm2lRDIkGdDsWxbCt00pXzl5tsvghmda9Fctu38AH6Hp+F8
+        XCw7B4y30lbrIM6L2CDbgvUjdP4xAk/hLPWfqHrCPMsFb27NSTi4XUwsdQ8R3Sq38D5LZ31B+bc1PQdcsnTu3J
+        NSKfMbDpMBbh53PsXNFuUhdcnUkKorbv6en+t9OJYwD/NraO+7+dpkPhXpRxi24izDfULQz/CW1DJJt3ROKAvYJ
+        5+hTnfNipKk9z3qBpE/FfQG6sNmTZOiJe/Q7xJ49FhQF5pNgJwLRWz+QhtNqUPJHw86AEVhbqL+Zep3JH8u6AWW
+        g1uof4rUoXfg2ZO6JhdE6uWES6ZuwjSWHk05eunEvTl1/wd2BZWgPdAjrCngXXilazZy5MnJddM+yN8XGWe6K
+        5WnvgvJ6WAvsBhcA9/r1A/M1OtYkTxHNlmTgEcX6gaCfy0KvwMHgD6U1fYxuB3eO1UQUa/j62QgG8vu7YC2Sz
+        V4FtwD/xJSLz1E31No+8HboDJtG5FcChRFCaLTaFgFyAFME/3EfxHQvhPkdGib3QH+C7SNtB+I3gJXo5P2kTQ
+        hT/uM7KxIzbpgFeq+JVWU5wp4F5G66UraJ1D/iLtSeeple85XZgswDfwBPudiSXEFwSu7Si/p6KanKTRx+OGXb
+        iPBHqCSsraDbDAZPMg4d1GnY0P73ZpAdC/191Ov7XYKGK5KSBvb2T9k35HwvaQG6D74b6asx/WNiPptqdA2kS
+        6fgivg036QJtpl98vAQUD7l25M5ER8Dl6B90LKG5B3bFRL3tGDrEnCs58yIaT9Zg3wjYfnVcqNonCedqf4CZk
+        PnEIm1f7sR9rGP6HznqS/Aj2B+/xUQflldP4jaQPBr4j7FUDH6GpAdqgh1dij4P8r5e3Jy5b9gfaFx6i/lTRN
+        tB9C5kSg/XMx0DltHKn2M900vkQ6iLomxx71Oka0P+uc9G947iJtINp3oqDz4i5A+5L28beAjo3XSdNEvfaN8
+        8DuQPOW/jqHans2IfgHU3k22BFIrrb9G+BK+rxH2oTgke1PAieADUFX6nRcV4EJ4F9AwZBLgPYv0YnI+74+m7
+        aH7KzjXHa6kza/7+dLf5H2uSByeOpcDP9An4eQmba9q17bQedcbUPp/SW4Ar4Z1A8iLztI3/S2I10PHAY0X81P
+        SyFeIU0TffqQ0Rw3BTr2PgLaB3RtkV4pIFL/t+h7GX22Ij8CrA+0D7UHGk/bR9tpCmkjos82VFwHdK7oBaaCIfBO
+        o20P8meBTmAhuJF6XVt0nu8OFgDHRmQbSOeX3kDj6RiRHmfRdzxpmpCxJZm/gOVAx1V+hKDr+OGDVDZkJpPfIIX0emZR
+        X5zbf4B7zZhZ2wWJQr8Yn/0aXBWvvJ8vJPzEd25TUcDnwr6s+v/2zgNeiur647uPoigoAk8pCigi9kSDGhsItr9KsaH
+        GFo0lthi7sYEoNmyJvYBI1KgYFbD3EmKLiSUaIyiCNIH3aCJS3/6/v9l7hruzs/v2FZqZ8/n89tx7zrllzi1zZnZmt6z
+        lNdMbb6jJ99OkkRV/Tj09M1MtIi/xrSxnMHYHA9Fz1ibp6wNJ9iRsYm0Sxzr5e/ADwKFgENAiDIh0VyCaYTLjyG4KNJn
+        MbSYTR3ahkz/my51uGbqRQJtCHiFX+1OiCmRccGWWgPtAB6Dougk4CHwKZkbLxOWx+xiItDGHRF7HLjouFEYS6L4E2i
+        hCIq+LWdFU0Af0A78FL4ZGJMj3ALPBMNAGNAJ7AgX6otFAG1lI5EdIAZ0LdgGWf5F0nv+QjQcXhxVEEugGg2iAkWO
+        F/l2gk1tI5K8DfwSnguOA9eMJ0scAHa9k56gQvDkwWi+sKKtTQK/x+hfYAZSBrcG9QDQW7BApo7bng619uaWRtwaiQ
+        00Wx9Frvoi+AY3ibEyG/ggwFzwOuoCGYANwIBgHHo/YIsq8ZzLjyJ6SAroZ9AJHgeeAAp2ASD8PJgGdqPIIueaJSMF7
+        SOTlP/nrn2A3oOMTdgavgHAdkW4HRD8CXcT1BWeBF8IKCySwsTn+hG+CfB0/X5M0ZbXORfcUKodO80r0JpDftUYHgwF
+        +GfL7gxngBaB3XBTUKljrCT4Br5s9aa1D0dcm8znyGwNtJnN3RN7CyYf6cj+NXnP4Y1+mNDLth/L7OaAZUN8OB+rzU
+        nB1TJmZyEUKimIJ3UDwA5Cf1gWan0cD7TNLwCXRgsjUvvyp+jXHFbCrj5uAAWAhULAn2a5gGVAfN5LMiLzmnqivyaIc
+        XbfAIpOZHtVZHv1pzibc+8g/BuSbjc3O58h/BkS7ReTXZ8WZO01O/kwnyws4ZYPuD2AK0MWM8scD0bvgAKA5p7l6vfQ
+        i0lpfoo/B9uAkMBcsBjlxFfktgcboBFdWe/8HkisvIn0bEN2YlQQyrekLwIlAYzoLiDTW6qPm1NdgG6C9UZQzV8i3DKSZzO+s3lpxKvm6uqBWekhR+qqjZ2dtS3D7RGrkzLdTT1cehmcbFOrM7OYdm/Nc7RkErR+WEtyaDfZfcCf3yqmN2+gq5adDT88cW21Qq8D3+XHBQlnZB87cOlgTDPID26Hkx4OcYIh8byAa6feTvO6WBER6cxlAuiLNIWRXBJrI87vIFACJ8k5aWXHweWlOZS6DRpu/7lKERL4b0MK5LxR6CeTarMO7Hp4qL4mdNiNRNLDtlxVnFsBjL8yQjwED/UrJm3++jMj3tzw2CrzmgDAY8nRNkb8HRDn+In9/ICUQkT1pBcPjnGwbq8PpFCBqY5U+Z5y9st+hm+mX89Po2gP5WeRvvD0idpdnTfICjIPMzunz7jQgfwNMBs3M1jgyu1DSMYSBJ+nbgei/ICdQVllkDaSEelpdhTg2ugARhSeRqC26PcAy8FRUpzzyjUE4VqQVWIlejNojGyYFdLzpSHcGHb38izKAXgN5ezEynRxFm3hlWpGfDr4GdlfN1Oqj5sMoE5BW4COaazJx8vv6+bg0Ns3BEqCAKa+tuDLVyajnaiAK/Rgtg+7IwCKTecTXIfP3p23JLwRvgbh5r74/bOVJW0AWe4GH/lIgCgMZlSVfHkizH6dYfT5HNQi8FZEd6Mqd6suVRr4VqHR63VkMCZnGVaS7jnmE3HxzdFSJ7ufgeyA6wNeT/yvQPpFz8Wg2yH8NdMc4INJDgGiQycTJXwfCc4yvszT6PYGoWGCrQE3kB7YjsqJgX9SdyBxC187pcy50kdnYXWMFkGn8Fzn79iY3jlzz5gYvrws+Uc7aJx+uE9JbyAB6zSt3VlaUedBk4siGguj57CBkncyOtOaN6DJXRhdmurMfEnntmaLwAoO0Am/tfVcA0UNhARLkTwOfAN3dDb768/UlpSm8mVCS8ao26tXis9TBrfqlyspOT6Wr+hHkjgUXp56b3zratQ3mTJjTpqryLp7F7dq4cZpncdP92T1yBipaRvnsC2eZAZkli/U87oQpZS0fmNqg5XGVTdrFXoXF1bHayZ6u2Js+dS6pX/PXDiZTSbb1a5QTTDAndSJSYHQKX1PYVyvWYo6tCbF71dJwKxNnazKzsWKxcltgzkgntpzg0skXwZdaRY7rjvAy0D8iD7L0V1/X6OuzUsj6FrW18WqC4mn6tkHUgPxiEO1b9NiDYvTpJa+8vmpaH+QFU9jp66eLne3JtLutS4vpmEPCVl8p2djoayaf2pBpBDYHe4EoHYhAm6IConWjSpfvB//OpcMTLe2+EbEvdMzRE12Or2m3G/XsBe6lTo1ZlK5AUAl0DGd5ShubLsiGU09OAENd8pPaio6NV0WY/KtL6W7IhaE0N/Ensmqzf644m6O9yaT+7unsOI17qvyvESk/DkzwjCyY7YnsOk9uSc07kX988tWGYDB1aQ7lEDL1xY5Vuri+pbB7JadgTAabOYh1olfwUbe7P8vrj51Dy9VBqlCfbQ3ISGtKNxH0aEdena7v/lq0Oo2rDp/Mx1G9zUHZ6kJrJ7+QS8ftD/3RaU4Pi9rTty+Q3eHkN1CnjsPI2s87Jjf/Nf6ah49ZAePU+zHp+1z+ZuyD+QXvjuwwMAKbj5w+yhQc+YHoQPI6rjMo31TGcO0fpwD1oRjl9T3GOM7GfL0L9tr7oxS3HmSjfUBkvtP81ty18e8daN0Hx1FOUgHkI548LOvJouskzuYFZx/dl7dF3pS2/D1La26Csxez+gJOnxcDf3+RTZ6fsHkB6JhvBRXgKNppD9cYqb1zQH9sgnrNqdLXhBT0lEprl2q4Qu36tPw8dXD5UalG6V60s31qyY8TUk9XjORObu9UzFfp5Ysqxrapqriav+3dpkGjhtul06lr8N5n1fWREenAsJyYqUr9eeHChZN4vGEcjzncy8tnR81YtzwvmK6uvprqNciZvfZqWNNyOfajZjZjutybIyuWKV+aNxGLma8Anb5G0slIm5wmvXhtqJTjKGQTldsJ/EE6onX2KH3cNNIpnVjs5KIFuh15bRYfs0At6IoUCd6wHZ4njBdowceR5scY8BXYDDxC29G9QIFl2DfSougxZqXukzoUKJ8OFHz8y4lzGMf1FoJPgPxzcI4yPzPViSZFVB29/Mle2pInkVD/RcHml03mfB5J7lygzTIMbHMssplCPowxzRHZnSAdbx7hhx8R3u8Uh3sGGptHwSIg/1wKohQ3NlEb5a8F85xiMONzqksHjLxORPpKbwb9Kba3PeyXq2Na4/6gq0NfMfaL1GdzLuDoZX+cs3k9Yutn66WPtNecStu4ii8nr/UREOkmYEegu9i1nRdWXY047bWlwH5Afnm7SGHfD9X1sdB6ls+1hp8ACkCfpH1dWPiUMwfR745SwZmez5Quju5EqP53BF1BKbQ/RtsAvQQZBC0xhSwg3MrZysTmTN43C1Ze9YHQX6Qnobsf6EL/ZGd3EnwMutj9zNnUhTWk8ENAx6Y7umrPJ/Ol9qlSaIQz6hsx1l7yOcfxaURem+w0V0j+8kl7zSZgkAlpT4FrqX23YgU5dWleDgbym/ZvUR+glzxHBTk+oiczk1fH967OwNN39NKrPtmr1RfcwT0m1Wit7XkcmoHgQfA5Fd9yF/e61DNzO8d1sPXi6Z+1raq8nCB3u/RajTvyqwpn8rbU85RdGGefKwu+vj2Vl88eXbKgahqPLUwl2H1VPyUGTtfzvd813Si6aeRWUU3uu7U32nRag/J+BNA3fddww8NTb7xRt4mUSd9Dk52qaXa5ulnHurW3vKbapsZR8D4wGig41FcSm8PjKNzssdHVZXjiwjjUxRUsICtUpoGzvwiuTbEF0N3RdZxcTJuWnciV31Mf0PgsW2Gf6tsCcARQAHUAuBr4pH75fZMu9lg5JpsrXbBZH0xikyl0ElI9H+oDkr1RXN3tUX4Bolf0HZG9DhQc6rkw+TYg0goAuoHHs5Lg5RmXzDJsNiWl+fEkeAfo2a2t4fVJO7vKJhSpNM4PGhsFmee4clfRtwMjdcSNTcSEwcpeHP0ahY3FXdS1l2e4u0tP9mR5SeopFADl2UYFtKevMpt4ch3f8+AWJxuGXmvWKHoiV7CiQEM0JcvyPwv0MZxTtKGvMRXIFyT0Oh+OALrD/hegtaq75v55UnNrErgMrFCiXT2f2tE18ku4+vEdx1pwvy3gB1dFyUxBQyNwMvgKbAL0lbnkRtE5aPN9ohlEOX2bgUy+E22RZdV+llKv2qxwNVm9tpd+U20LuQbXktWeeC7Hq5tyCp4GgeoonGtFDONstB7eAle5cnfSri4QjGw9lLQXU0jBnfq/F/WsZ5XADwXDvbyfDPtFGT3qtpmvjElrPojuz7Lwc6RL6TEJXQz57YdGJSTC/hSw1QWS5pK+9dPecBG4BoTkL9hQWCxBRWq0ZzGbiK5TJL96ZA9abywB7vGpBmWdeEzhL9yLOj21dLGeKf1balTFWXGPKqjjbRdOm+geVzgo3aZxy4YNGvLGX2oQge7fOJVoQhUlHltow42vvfVTYuAu/tb3jWU/LJ3O87oVBL0f6KfFwF+DxxnKWt3Ks7sDp5W1Op+g9VxeVhsEvxv9E9i+Dv+UcrOWLVr2OeOyb1njBnfqn9fqtLnp2LN/flD0OEKlTnq/CL8WCcUrKWELoIJjfhGcR7vXgXZACytufutZHXv+shK73UFdqNBJ304C0uuu1Bygu7FDgJE2Lf8kpX6LSrhgyhrW8lObaWP89RH8bFeHNiNtfkbqW3QzNZ2em5wOKoCuoH/tFJs7roCzGE1wyri9IRhT6pUveoHf0E8LzFyxVEcSCnifAjr5HAuM1BcFrP91gg6m8PiRpJ+nXh3fM05+hKevU5K+6+vL1q6SYr6Y6Gz04oMuCEQ2NveQVnClOaw76uZbsnkXRJLFEseok83vnVJ130dd4qKNsyx8JMNl68zuoA2tMa0vjYO/DrUuGoM/gHeAfOU/DqN5J7K5Z2vie45lQVZV8qdO0uqHToJzgfaHYnQ0yn3BxUAXFjPBHuBSoAsFjeVtQPNRwe+KoMNdn9W2grUdXSPmh4Lf5BTpjJ5D/TYK7C8vUMbm4Dz0hwMdd3dwMzDSONkYSWbzs9h8l90EfUBmn80V/jS7mtZr/lpYuOp8DWM8FalukrQHI4AepfkQXh9k68D3m62Hq2ngZbAW0LlrI9eg2Rp34nhGXzUvXwC6MNENC30T2Bym8dN+Ekd6DtbOiZpzu8YY2blWKu0n+qUU2zvN/F4SY1zmUPi71NvWlI779URUYTYTpmIStKt94EbQFAwHCm6fBiGZo0NBCQmd1MpLsDOTzSyxWvLeLb5N9W15QapMLyuUncvutXGqKnN7avHCKQS5b3In94zUqPk2yXIOoe3UqQs2Wjr9Ve7mXsFzud3admjanD+C6MGzuRdRz2NshWMZxaKD5FXYkqB3J4z3BbzkxuMMevM6k+nPGy43kb6FX0y6DH4aejabTHf4fO6h3ZBu2rh926qKU1svnP6NV1/NkyNnDgyOvSYleYGHY40GHjWpob5tr6XCWWB7cFBM5a87XVf4uUAnkBVBFjw0YiGOp4HjgPz0K8ZQ7Yq0WfkbVuNAGvP1OWXaAD2bNg6MBTcD/06YK1oSU9+08elkrU38QaWhB6lTd8hE6pcfdAdC96F5tg3YDhwGtBmKtEmLWmdZwU8FGqLZWZbzqaBIm9Q74CH6916ONpvpAJsKHnC6UxwXOwkMAVOUgdpnWc6nglgFfKLRWVb0cQRnUjIzP6gAF7IFabrTKEjQBYLITnRKnwr+DXRiegq/rAMXyb7Q2AQG/gc+vIO8TpyizqBnkFr+uEZt55GrJo9diuTnQCfIh2n/B88imHvIdAwaBwVqnYCCd530bD1E+droSiU7eapdzVEFh9oLtA6LkU7YC+jbZ0D7wm+d8ZX0bR+X1tzWefMDl69v9hwVau/S/nQJsP3J/FGbsfqKeg6JgYKCONIYpTnmhvjhE9KnO6OzkR3r0tE5aHO+1LWvPboUqnG9bh41cpXnrX/0+4JXwJfgQ7BfpCO3unxvuPbHUsgC72LzdF1X0SKvQvlaNxmq4MeAiaAdsDvk8rPIxj+bK/6pgFzUJ8uCn8d7kza01uLoNYQ2584nbXPOt90NP70MXkWoOaC9KYeoX308AFjAuzXpx3KMSsvY+i1mfQ9K+VxjpN/pJhxaTrUJbLddXryklBxSm3ZKqrzejPqWf586pOUfCXI35w7uEQSM2ri6E1jemaoiyB1Z8Tp3ck9PPTMrb6FYH9ITJizkjyDe5NncG9tVVfyqXaaiS6OW6fUbNmiwe1lZ2YnBnd10+lHu7v6DfUMn5sVWthhnlJdShk05/Uw6XXY9dR25brMm5fpHtXZVlTe0/X6qBRbFqims+5C3soO/z41/gaRwQTQFfj+waJn6U+YtACa4TmbvuiZ0QovSQmz0TKE2kAfAV1GDavJ5bRaw14YlaqwP2nsWdqXSkJ533BOu8ddmYDTdJTYzgXHKTyOtgEHzT8GJ/t3GNlOysVSor8Fm6pU4jbTmezOgAEpcG6rfN7IhLaVt3SXXH2O8hPRlpzFftqYOO7GEhbyEbfBjPZkl7ychyG8nUc+GpvB4R9LyxxtgAtgWu11Ad9IaX43/FCBSEBwSNvLdDuDXpB+FXwkUJG5FvqZ7G8XyifbnIrU1WXC/wKapKz2eMhaoaq+0OaO5rIBEQcB2QH4RFRubrEX+5wBEY5xYAadocpbV4LEjV6Aapj+D0FfmGt/BEdtw7qHXGB0OFgOdENVHHZvI5t6kbDbViPEp5ktnFrCMyyyjjZlgMngLmV3M+LbZAtmv2X9GJlxTlNEFli4K1OfHaX9z+Dbga6D1UirZOjQeV850P9Ku7U9DMJzojG2sOtAP9acmNJ86/xkFFZhvo3VZ/TYPh2NwmzO6l/YVBEXnoK396sao2NqP9kP5GtfLcWr8Z7jK4vbSV9BpLmwBvsTe9q+gCPlvSNherAvLUmieM7Ljiysj3WzqtzkuG/k62CuRa8/QetcdyW5gMLIquPYG2x9IVksKLDWPD2SsGsK1xh4Bhcifcw9gpPkdpS8QXA+k0/nhdyCP6O98hH3BQKfUr0Xs5hna2vREeclqbVw7NjafRWuoTcBZo82fgyqn0V9GG15t8zrB9G35BI8p7JpqmN6FkOQBrl0XEuD24G7mXamlyyYSBH7OX/jeBN8n9XkmWPyFjqe8ouL7jZbOeIdHBB4M7uxWVRzN3d2dCXrbEZiuNbb7do2q2jVZp1Grsmbft0yv1xgs2GCD9cUlb4ueZ3tBRSfK9GlbNfMS6hqx/rzJOtnVnUZW7p+aXPkpx3d8rSrzHtiuVfm6FbKTQbQWnVBF62VZ8Gm24aJhcSgIso1TRmZj3CseJoNNKMwVLpNzcnD2g+BPAG02I4DWxlJg9J5LbMK62cqExumrNje72tfmVx3ZcRg3e7UfzlvqVZ3aUKeCLYE2N/XL7xvZeP9Q/r9SQvK76tK+sjsoRO2dwjYmZa2Pn1Lf8+T7gxbgdhClDgimYqexfNApT4GfDIa4/BTHZevTkWTk50fAKIe/wkVHZFnOp/Wrur3S7Kzwpy6xpwlieJwfomOjE4n6pbE4mnmhE0rc2CBeTth1ATYHdWElX1lwojvAoneyLKWfPit1X7fjNO6qCJjJ1FZWkP9Smvrkz72/kz8zax2M+b4urbkuGgd0whcdmGXVfub1QyXwQd4J0KtJc60R0GMhOnEbnUdCfpJeAcNvwI3UZf0jWy1Zf4wXK+D7bi7tfOuM34erzaagm5OVygq1a3LjVp/Nm3CcUJwPXgPrgKeA+uHvD7aW9RNj0hUim/P+WETb98tavfo9Vb8/vo3SqrcKKAAT2V66Xzab96mLRtGPWZb3OddJ/CA0z8gTTCKt8dGz3NE9x8y07sZbxvHoevgI+YlOp+d8tfbVB9/XTh3PmDMKLl8Aaq830F6sQD5K5nd/zukbi689Q7PRP6q9jlzrYSoYQN+28OzCJHYZcCWCe51wx1C5fJ+3ej1VmDSd8VARScxz+bwxqm6zjtQTZLeJE1Yj61ONfpWqGaB1QL4verf6IHVIq5NSjcvapsrSZ3Dq/TjoqF40qao6n2DwldS4ilkEuKPBmalRs7ZHll9PkaPr8eabSzeZPPnHDWfOnL8lQbAC4c6zvponLnkafZHitVeNmtmFX4R4NpWpepE+K5ipOel5nrIWz9W8YL2VKOTrBa6FL72WqlskMjUb417x8DlBnfx8sj5EyyhAEYWbsRY8+ROA5pG+shsMtBkaaTOeAFTXJaAYhZtREaNCfcvZTFWevmmzUnCrwPRwoDUbnXt2jFYvJsuJOrTRPOQkZyzX5KW6IVF7umNqZHUbH4pCJ7UjWJvqT0CkpdeJY1pWEgSy6udRoBew9lW/SLY+KbC9n77q334CkL/ZGUgXJetP7DF7+4bZWfk7XOI32Kxlwgjf0+WtfWXjxuY15DqhiGQbvSAKFJGPnci3jcjspPq15By/LkjedTbXO57H6H8XT2jHadxTheun2NzMCdxVmH4Mgd2uJBgOJFvmuOoapjSk37DUXa88ivQxdqzyCnkC2ptB1vaNvU2FXCfNw8BkoH2yH9Cd3JqQxlRUrF+mi/Wd65/ttddxvHH+ZyvPGSur03i2F8s/TR6ty/aucK+jfa0xBVmaO51Af+DvDy+THweageNAHtG3FggVP+jf0b7xDKx9a9dTBQGZfK85r/bziHo3Rrgp0GMvdqf1UWe4H/queYWWC2L9vVxdWop2FSB/5qx3LVBqF+SvRXQ65vAcIR11jYBdozT0ANA4+L6WvNDYSSdSHaI/Ab1/8kOQy/0wv+dKc3NmE3BXz2WYrA2G4dtgbsP129HR437MVWXrSlnrt1PFMrMxHmtUTFibglsXq7CA7lgOukkB3SoT0yd9vXUoHWjNgFUV7MiBLeel+ra6m58L2yG4i1uWGsoWnJ0oGV5+4Mf/wR2pqmWfcCeFmlH0AAAPIElEQVR3NkHui/wZxBWp0RU9g7/4LVjxSla8wxiMmnkM/Xs1lUl/wXO8B9WpB+nU3aneNX6ho05NRgprcYmigcMOyBRk6c6CkW2aViaQM/69gS1es7ETkZUVt7Wy2BeSNlsra2rL5/SNeaZFrq9qdCJdH4QbFjqlLwAiPYvbL5us9ae1nbNxUpv6Zrqwctr/gMwpTrAePAguQoPlG3BeWc9mMGkdxyH0f39PHiSR7UZiR3A17elkYGT+CsYHndbj6UAnHn392c4Z6oJA7QeBK3ZTSI8CCni0gVfCdXKYA9MabUvZ4Pjh2ru2BLIPCdt/kJkM9Aa/+uaT9avQMdv465lEm0cqrzsk/wGtwCCQQ9jqrtaJYDTtv+cpdRLLawsbBX73A+m1l0bHBlEOyeaAHMnyX6F435OfTXoJ0Ask6k8OuWM61hPa8Rr3VMG8Ul5th0QdvcNMgbmH/lzwKtC80/zx6Voy3wIF6rdSX1zbx3sFwjFz/Q9UpPXHA9GTr1cs/CWNAditYwp8/x3pAS6vtp9B39z0JXAbT+NxRazPxXynvWE+UIB0YVwlyGL9UMBWc0kUtz9IHqxFJUT4YRasD9Deqr0rnIPotF6vA6JL8E/7bDLn8wxyWiOX50izc0IijX1I1HE49Wpu3uiEA5Bp/Ufpdwi0L9sYqa9PkX/LGd5DuQ1dulRmc8z2/VLKPeSMfk97OeXI74yuKxgeqUjjHjcvrkBu+5r6El0TNl+MR6pNPYtA55pNwCNRpctb2Zxxpq/R9Spzv486hjFAe/mlQLQB2EsJj2yNfOzJzK/WtqcKk6bz2wyVXsLqyvG19HkCr1ChZE0niK4idVLS5FttiD4dSGfuBGNYBONL7pju4vYtPzm1fqvW3MU9jmX6Iqto+aTTT1wEJ/Sqq1LL+LeOHyvn8BLax/xm7kPgotToWQekRlZqsq0cenp2R54NPpa2h6amV07jy5qH6d/eQBtMXWhaqqyxbTh1qacuZdu4wrsynnohoAU4Hdl+4DzGtcKrvIVL65nv/UFHoCDmNOzsql2btShng82KgsBJydkub8wWr5U1eTOX2MgExmnvW9KHAG3Gy+cOGXRPws4Ci4Ce67sSaNNgyILNOefEJ3kRsrVaHrFR33SSz5sDtK/NebCzz+kbMjtG/cNNXlmVofw42MlKgpHY6evzYJ+B74TsUTAc3Ad8Co4RgflTdf2dvAI6jZ18oWPfCmi8KoHRHS4xxASOKyDR5re9y58K/4h6/bJOFQa78r1Pef3ylaTD/pI2/6jv6uPhYAbQHyQoIAvmFVzjMgLMAeqTTxqbvDnjDM6Ev+3S0bFx4pApWNFPhW0nCbwTbCB4ir59KJnIpY8huRA8gJ1+Eky/1apvsVTmLuDPOTve8FjRG5mvdCNDX0l3AL1Q7m0G8Njjox8Kko4Amj85x4ZOflI9k8Ep4CXq7QGaAv2mrPzSHRhZP3TCVpCxGehC+iqgdVWIBqGYDn4O3qLMr0BPcBP5W8AFQH3ZGYxBviW8FLJgzParuDLWZx3X3qAD6Iqh1lJA+EG+0d1jBZY3oH8I6NlyjZX2s+uQbwyMrE4bM5MbN3l0LG3/y5uH9OE/FD4aKJCNjtMwZEOBzm9v0h/1X3NPF33HkVQQ9FtXh1RG1o9zsNsd6FccjkTZ1xncAX8cbA7eQBesZ3gZ0Po5G5xAvRPgPslXr4JfgPew1VjavtXBGWqdxpH1yXwRZxOVqZ+fgF+CP9OW5qbG5hDyz4NrYo690HpQv44F/wYirQ+frH/RsQtsaOcHEmqzArwcCPM/bH7sQR/9c+JvPVOzsfZsb5Pfvwf9Kbsv3Naa7Tfy20XgNfryL7iR9de4yQNOXdqvzefWdo6Nl7E+yYc5ZIOcIyyWoeFFQJtmjYiDm02BTo7XqGx9GtP3bajvZvA1OIf+LKlz/c9/X55avOgITrecIIreEfCa4gWTdOYz7px+g3ASlxiTUukywI9EN4Lvv95s0oUWnVcPSQUOL8xqm1qW7shd4w7U2REhEyy9B7p2WNQz6STEW8KHlL9ZzxWXXB3j2APjy8CGQItKC2U++BDczbi+CQ/IjblOajoRaeHIXifrhkA/KN4LG/lJJ/7dgGweA39Gp3mizXko7DdgP2SvONnOcNW7CVgMhoEhQCeEC4H6OBboJQAFaTlEncchOADd0TkKMq4/qrsb6AAqQVPwFRhOmT/CY4my66K4BBwKloGZQIHU/aAnuACozmeBnhfUyTwkypeReRLoqz1x9UcnZZ34dwXyj+R6GzX2ohB72V0BtOktAtpoJ4NbKfMwPCRs+5C5EmhcJoA7sNGmrHbVl2uBTg4Tgfzwc/AQUN+XwGV3G+z35DMur3KjQXugdt8HRwDtQ5dh9xY8JMqfReZcoGO7D/wJKBAfBLTBqv8PAD3GIJ+qzWaw/qAXSIOXwIPoP4IHhI3mwlXgKKA5p7FQ+eFALwAugAeE7Ukk1I+1wD3gTmuLdEDYtCTxHtgVXUVWmv+JXVekfwGbA7Wpk4DqvMRvk3xA2G9B4g9Ax1IeCLMfGt8TKfM2NluR1rFsk1UF8304uhnoDkam8dYYNgI6VqU1DpcB+e5soGOUL/9IuYfhOUQ9XRA8i65zjoIMuhaw84CCHh2XkfwwkDL6RQ2N1QCgeae25ct1QEMgX2+L3Tx4LFFe60Jza0/P4G3SulD+J/pNSV8OdgGqeyS4Hp3mZR5h/yuEFwHNK+FxMBz7ifCAsNF8ll87AdnId4LSCgw0b0PCvj2Zi4F83jZUZF8GOwv70a6fqvMXQMcuXw9DNwkuX3aDXQ1aAflF46O9S36/EPwSfAK0d/mBCaKg/LmwTdFpTHOIuo9HIP3PgPyicXgfXIn9B/CAsJNcbZ0AtG41bzRnbN7cgv015NVfra+TgdrT/NOYyz9jwADsPobHEmX7ojgfbA00F2aB9YH2v5so+094QK5PslVbVeAfQPvc2/BqifLNMbodHAUaugLywUDqkDwg7NT3M8BpQHvY7eiHwnMIO81Htd0RvXwkX3SHXQU0dvPBMKA+LoWHhJ2OuztyrZkcQrctAtWh9aa+yOfyjdJ/p0wfbDYmLRvNhTKgPesedLPh6sdusMFAe9wosBfQXB4PTKY92ez3Rj4QbADmAvV7KHr5WfXJX5eCo5UFmjPS/w2eQ9ieiEBzR/Ql0PE/F+T40GQpmahMVx8/lFwgYkjDLyDqDdfGvlKJfnelwUvAPuB0+qBNv/5p9JxNU5mlR7EkDsa7OzFaNfJx2KFgEmcWMLzyt37WiwkcnAQbIluboHhtAljjLNKib6GH1dZLIp2+nJfrgg2nXupbAyph/mjz08LbsT7nL/U2or4gOCvkBmwao9NJXb9EkLN5FSpTVzltat42qGt71KONshzo5YOFde3XmlweX7Sk/8vww5y6HAf1VDtnrH5sFfg0AxNL9T9ldHJeF8yjzPfwlUqlHB826p/6+SOYTT91Iqw3on6ttw3BZOpW8LBaEv1cj45pfPXLBwoWVhpVN07oFfgriKnXfYt6FYRp7PWLFzWKJSircdU/jtVpDVJHUaIdXZhsCrS3+796UrRcnJK6Sl7v0fKUbcixrpRzhtqmPa1L4pFUJe0ukmxVUI2CLjrdBkytS0c5WP13uq5SVgrRX10l/AG+D+3+m3Q/uCL8FU8v/tAmtWhhL14060Nguk8QkK74VldgC9pE0hcEP4u2AltZ3apm7nSjT48CXZT9a3XrX9KfxAOJBxIPJB5IPJB4IOuBmga2G3CS1238OhHBwX1UoK92an33t1gH6GNT9IeCs0jvJFvaGgI7G64r/JVPz/AywtLK/fgjiF4EuD2BrubWIOLFgTRfAR7c6tU1qNN17irzpzuV6KuRK5g7M+pcYVJB4oHEA4kHEg8kHkg8sMI8UNPAVvZLOdnreYs6EUHC11RwAnxMnSpyhemTvibeDxwL+pLX8yIKaPUszinwkcqvNqSXusqqevLbuD0IGHtwD7/datO33I78yLO/d6YaNLoh1Xs9+TKhxAOJBxIPJB5IPJB4IPHAaumBGgW2OgICxkqg51TqTASbemj4YaDnXV8jX6NnQehHe8rtAfRVsX5eSM9EhUR9z5PRf81PD4Wra+K5eVukli7Zg0BXzwJ35RlafhM3eDlhVfWYu5PpR1NNmtyQ+r91p62qTiTtJh5IPJB4IPFA4oHEA4kHSvVAbQLbzwkgty61gVLtCD715uBT4EOgQOo7x/XwtQJWQW/atQYK/vQTFZvA84i65iG8EK5HHtZM0t/cTqrYnru5XQlwd+QgunD7uTNXFnoZZEXReNp4NpVu8GSqT/MxpHXhkVDigcQDiQcSDyQeSDyQeGCN8EBtAtshBJQnra5HRzA7mr6dAZ+yuvaxTv16g+eH583pnEpXdebu7ubUtRHBbjlBKIF/8PfFGxII81ZiWm+jNyAwLkOfRq+3hueS5gKCi4h0Ro8VTOWXFT5NlTX4JLVO5pPUvi1W6lu1tJ9Q4oHEA4kHEg8kHkg8kHig3jxQm8D2eALb4fXWg3qqiEBWjxvo5bAR9VTlT6ca+8mxev5JnJ+Og5IjSTyQeCDxQOKBxAOJB34KHqjNS2BvrU4HTiC7BNxMn7ZIgtoCI6OANglqCzgnESceSDyQeCDxQOKBxAM/FQ/UOLAleJwInlsdHEA/XqIf28MvAHquNqHEA4kHEg8kHkg8kHgg8UDigf9RD9Q4sHV+WqX/OkUQ+yHYH/wf+O//6Nglh514IPFA4oHEA4kHEg8kHkg84HmgVoEtweS7YKXftaXN/4DDwE7gZe84kmTigcQDiQcSDyQeSDyQeCDxwP+4B2r88pj5ixfI9B/Q78M7m2xFcYLYd6l7MBhFul7/E3xF9TmpN/FA4oHEA4kHEg8kHkg8kHhgDfIAQe0WoKKqqipT36DeRWAE2H0NcknS1cQDiQcSDyQeSDyQeCDxQOKBNdUDBJ4dwLv1FdhS17/BeaDVmuqTpN+JBxIPJB5IPJB4IPFA4oHEA2uoBwhCG4JTwLiaBriUWQLeAReDLdZQFyTdTjyQeCDxQOKBxAOJBxIPJB5YxR6o9TO2cf0mMNW/Xe0G9gO7Av3lbTsg+WLwA5gAxoMvwDvgfZ6bXQBPKPFA4oHEA4kHEg8kHkg8kHgg8UCtPfD/WubD/1EepBEAAAAASUVORK5CYII=" alt="顶部图片">
+    </div>
+    <div class="component">
+        <div class="card">
+            <h2>PREDICT</h2>
+        </div> 
+    </div>
+</head>
+<body> 
+
+    <div class="container fade-in">
+        <h2>原子间距离预测</h2>
+
+        <div class="input-group">
+            <input type="text" id="atom1" placeholder="原子1" name="text" class="input" autocomplete="off" maxlength="2">
+            <input type="text" id="atom2" placeholder="原子2" name="text" class="input" autocomplete="off" maxlength="2">
+
+        </div>
+        <!-- 按钮 -->
+        <div class = 'btn-container'>
+        <button class='btn1' onclick="openModal()">元素周期表</button>
+        <button class = 'btn' onclick="predictDistance()">预测距离</button>
+        </div>
+        <!-- 弹窗 -->
+        <div id="periodic-table-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <!-- 周期表内容 -->
+                <div class="periodic-table">
+                    <!-- 第一行 -->
+                    <div class="element hydrogen" onclick="handleElementClick(this)">
+                        <div class="symbol">H</div>
+                        <div class="number">1</div>
+                    </div>
+                    <div class="element helium" onclick="handleElementClick(this)">
+                        <div class="symbol">He</div>
+                        <div class="number">2</div>
+                    </div>
+                    <!-- 第二行 -->
+                    <div class="element lithium" onclick="handleElementClick(this)">
+                        <div class="symbol">Li</div>
+                        <div class="number">3</div>
+                    </div>
+                    <div class="element beryllium" onclick="handleElementClick(this)">
+                        <div class="symbol">Be</div>
+                        <div class="number">4</div>
+                    </div>
+                    <div class="element boron" onclick="handleElementClick(this)">
+                        <div class="symbol">B</div>
+                        <div class="number">5</div>
+                    </div>
+                    <div class="element carbon" onclick="handleElementClick(this)">
+                        <div class="symbol">C</div>
+                        <div class="number">6</div>
+                    </div>
+                    <div class="element nitrogen" onclick="handleElementClick(this)">
+                        <div class="symbol">N</div>
+                        <div class="number">7</div>
+                    </div>
+                    <div class="element oxygen" onclick="handleElementClick(this)">
+                        <div class="symbol">O</div>
+                        <div class="number">8</div>
+                    </div>
+                    <div class="element fluorine" onclick="handleElementClick(this)">
+                        <div class="symbol">F</div>
+                        <div class="number">9</div>
+                    </div>
+                    <div class="element neon" onclick="handleElementClick(this)">
+                        <div class="symbol">Ne</div>
+                        <div class="number">10</div>
+                    </div>
+                    <!-- 第三行 -->
+                    <div class="element sodium" onclick="handleElementClick(this)">
+                        <div class="symbol">Na</div>
+                        <div class="number">11</div>
+                    </div>
+                    <div class="element magnesium" onclick="handleElementClick(this)">
+                        <div class="symbol">Mg</div>
+                        <div class="number">12</div>
+                    </div>
+                    <div class="element aluminum" onclick="handleElementClick(this)">
+                        <div class="symbol">Al</div>
+                        <div class="number">13</div>
+                    </div>
+                    <div class="element silicon" onclick="handleElementClick(this)">
+                        <div class="symbol">Si</div>
+                        <div class="number">14</div>
+                    </div>
+                    <div class="element phosphorus" onclick="handleElementClick(this)">
+                        <div class="symbol">P</div>
+                        <div class="number">15</div>
+                    </div>
+                    <div class="element sulfur" onclick="handleElementClick(this)">
+                        <div class="symbol">S</div>
+                        <div class="number">16</div>
+                    </div>
+                    <div class="element chlorine" onclick="handleElementClick(this)">
+                        <div class="symbol">Cl</div>
+                        <div class="number">17</div>
+                    </div>
+                    <div class="element argon" onclick="handleElementClick(this)">
+                        <div class="symbol">Ar</div>
+                        <div class="number">18</div>
+                    </div>
+                    <!-- 第四行 -->
+                    <div class="element potassium" onclick="handleElementClick(this)">
+                        <div class="symbol">K</div>
+                        <div class="number">19</div>
+                    </div>
+                    <div class="element calcium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ca</div>
+                        <div class="number">20</div>
+                    </div>
+                    <div class="element scandium" onclick="handleElementClick(this)">
+                        <div class="symbol">Sc</div>
+                        <div class="number">21</div>
+                    </div>
+                    <div class="element titanium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ti</div>
+                        <div class="number">22</div>
+                    </div>
+                    <div class="element vanadium" onclick="handleElementClick(this)">
+                        <div class="symbol">V</div>
+                        <div class="number">23</div>
+                    </div>
+                    <div class="element chromium" onclick="handleElementClick(this)">
+                        <div class="symbol">Cr</div>
+                        <div class="number">24</div>
+                    </div>
+                    <div class="element manganese" onclick="handleElementClick(this)">
+                        <div class="symbol">Mn</div>
+                        <div class="number">25</div>
+                    </div>
+                    <div class="element iron" onclick="handleElementClick(this)">
+                        <div class="symbol">Fe</div>
+                        <div class="number">26</div>
+                    </div>
+                    <div class="element cobalt" onclick="handleElementClick(this)">
+                        <div class="symbol">Co</div>
+                        <div class="number">27</div>
+                    </div>
+                    <div class="element nickel" onclick="handleElementClick(this)">
+                        <div class="symbol">Ni</div>
+                        <div class="number">28</div>
+                    </div>
+                    <div class="element copper" onclick="handleElementClick(this)">
+                        <div class="symbol">Cu</div>
+                        <div class="number">29</div>
+                    </div>
+                    <div class="element zinc" onclick="handleElementClick(this)">
+                        <div class="symbol">Zn</div>
+                        <div class="number">30</div>
+                    </div>
+                    <div class="element gallium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ga</div>
+                        <div class="number">31</div>
+                    </div>
+                    <div class="element germanium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ge</div>
+                        <div class="number">32</div>
+                    </div>
+                    <div class="element arsenic" onclick="handleElementClick(this)">
+                        <div class="symbol">As</div>
+                        <div class="number">33</div>
+                    </div>
+                    <div class="element selenium" onclick="handleElementClick(this)">
+                        <div class="symbol">Se</div>
+                        <div class="number">34</div>
+                    </div>
+                    <div class="element bromine" onclick="handleElementClick(this)">
+                        <div class="symbol">Br</div>
+                        <div class="number">35</div>
+                    </div>
+                    <div class="element krypton" onclick="handleElementClick(this)">
+                        <div class="symbol">Kr</div>
+                        <div class="number">36</div>
+                    </div>
+                    <!-- 第五行 -->
+                    <div class="element rubidium" onclick="handleElementClick(this)">
+                        <div class="symbol">Rb</div>
+                        <div class="number">37</div>
+                    </div>
+                    <div class="element strontium" onclick="handleElementClick(this)">
+                        <div class="symbol">Sr</div>
+                        <div class="number">38</div>
+                    </div>
+                    <div class="element yttrium" onclick="handleElementClick(this)">
+                        <div class="symbol">Y</div>
+                        <div class="number">39</div>
+                    </div>
+                    <div class="element zirconium" onclick="handleElementClick(this)">
+                        <div class="symbol">Zr</div>
+                        <div class="number">40</div>
+                    </div>
+                    <div class="element niobium" onclick="handleElementClick(this)">
+                        <div class="symbol">Nb</div>
+                        <div class="number">41</div>
+                    </div>
+                    <div class="element molybdenum" onclick="handleElementClick(this)">
+                        <div class="symbol">Mo</div>
+                        <div class="number">42</div>
+                    </div>
+                    <div class="element technetium" onclick="handleElementClick(this)">
+                        <div class="symbol">Tc</div>
+                        <div class="number">43</div>
+                    </div>
+                    <div class="element ruthenium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ru</div>
+                        <div class="number">44</div>
+                    </div>
+                    <div class="element rhodium" onclick="handleElementClick(this)">
+                        <div class="symbol">Rh</div>
+                        <div class="number">45</div>
+                    </div>
+                    <div class="element palladium" onclick="handleElementClick(this)">
+                        <div class="symbol">Pd</div>
+                        <div class="number">46</div>
+                    </div>
+                    <div class="element silver" onclick="handleElementClick(this)">
+                        <div class="symbol">Ag</div>
+                        <div class="number">47</div>
+                    </div>
+                    <div class="element cadmium" onclick="handleElementClick(this)">
+                        <div class="symbol">Cd</div>
+                        <div class="number">48</div>
+                    </div>
+                    <div class="element indium" onclick="handleElementClick(this)">
+                        <div class="symbol">In</div>
+                        <div class="number">49</div>
+                    </div>
+                    <div class="element tin" onclick="handleElementClick(this)">
+                        <div class="symbol">Sn</div>
+                        <div class="number">50</div>
+                    </div>
+                    <div class="element antimony" onclick="handleElementClick(this)">
+                        <div class="symbol">Sb</div>
+                        <div class="number">51</div>
+                    </div>
+                    <div class="element tellurium" onclick="handleElementClick(this)">
+                        <div class="symbol">Te</div>
+                        <div class="number">52</div>
+                    </div>
+                    <div class="element iodine" onclick="handleElementClick(this)">
+                        <div class="symbol">I</div>
+                        <div class="number">53</div>
+                    </div>
+                    <div class="element xenon" onclick="handleElementClick(this)">
+                        <div class="symbol">Xe</div>
+                        <div class="number">54</div>
+                    </div>
+                    <!-- 第六行 -->
+                    <div class="element cesium" onclick="handleElementClick(this)">
+                        <div class="symbol">Cs</div>
+                        <div class="number">55</div>
+                    </div>
+                    <div class="element barium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ba</div>
+                        <div class="number">56</div>
+                    </div>
+                    <div class="element lanthanum" onclick="handleElementClick(this)">
+                        <div class="symbol">La</div>
+                        <div class="number">57</div>
+                    </div>
+                    <div class="element cerium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ce</div>
+                        <div class="number">58</div>
+                    </div>
+                    <div class="element praseodymium" onclick="handleElementClick(this)">
+                        <div class="symbol">Pr</div>
+                        <div class="number">59</div>
+                    </div>
+                    <div class="element neodymium" onclick="handleElementClick(this)">
+                        <div class="symbol">Nd</div>
+                        <div class="number">60</div>
+                    </div>
+                    <div class="element promethium" onclick="handleElementClick(this)">
+                        <div class="symbol">Pm</div>
+                        <div class="number">61</div>
+                    </div>
+                    <div class="element samarium" onclick="handleElementClick(this)">
+                        <div class="symbol">Sm</div>
+                        <div class="number">62</div>
+                    </div>
+                    <div class="element europium" onclick="handleElementClick(this)">
+                        <div class="symbol">Eu</div>
+                        <div class="number">63</div>
+                    </div>
+                    <div class="element gadolinium" onclick="handleElementClick(this)">
+                        <div class="symbol">Gd</div>
+                        <div class="number">64</div>
+                    </div>
+                    <div class="element terbium" onclick="handleElementClick(this)">
+                        <div class="symbol">Tb</div>
+                        <div class="number">65</div>
+                    </div>
+                    <div class="element dysprosium" onclick="handleElementClick(this)">
+                        <div class="symbol">Dy</div>
+                        <div class="number">66</div>
+                    </div>
+                    <div class="element holmium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ho</div>
+                        <div class="number">67</div>
+                    </div>
+                    <div class="element erbium" onclick="handleElementClick(this)">
+                        <div class="symbol">Er</div>
+                        <div class="number">68</div>
+                    </div>
+                    <div class="element thulium" onclick="handleElementClick(this)">
+                        <div class="symbol">Tm</div>
+                        <div class="number">69</div>
+                    </div>
+                    <div class="element ytterbium" onclick="handleElementClick(this)">
+                        <div class="symbol">Yb</div>
+                        <div class="number">70</div>
+                    </div>
+                    <div class="element lutetium" onclick="handleElementClick(this)">
+                        <div class="symbol">Lu</div>
+                        <div class="number">71</div>
+                    </div>
+                    <div class="element hafnium" onclick="handleElementClick(this)">
+                        <div class="symbol">Hf</div>
+                        <div class="number">72</div>
+                    </div>
+                    <div class="element tantalum" onclick="handleElementClick(this)">
+                        <div class="symbol">Ta</div>
+                        <div class="number">73</div>
+                    </div>
+                    <div class="element tungsten" onclick="handleElementClick(this)">
+                        <div class="symbol">W</div>
+                        <div class="number">74</div>
+                    </div>
+                    <div class="element rhenium" onclick="handleElementClick(this)">
+                        <div class="symbol">Re</div>
+                        <div class="number">75</div>
+                    </div>
+                    <div class="element osmium" onclick="handleElementClick(this)">
+                        <div class="symbol">Os</div>
+                        <div class="number">76</div>
+                    </div>
+                    <div class="element iridium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ir</div>
+                        <div class="number">77</div>
+                    </div>
+                    <div class="element platinum" onclick="handleElementClick(this)">
+                        <div class="symbol">Pt</div>
+                        <div class="number">78</div>
+                    </div>
+                    <div class="element gold" onclick="handleElementClick(this)">
+                        <div class="symbol">Au</div>
+                        <div class="number">79</div>
+                    </div>
+                    <div class="element mercury" onclick="handleElementClick(this)">
+                        <div class="symbol">Hg</div>
+                        <div class="number">80</div>
+                    </div>
+                    <div class="element thallium" onclick="handleElementClick(this)">
+                        <div class="symbol">Tl</div>
+                        <div class="number">81</div>
+                    </div>
+                    <div class="element lead" onclick="handleElementClick(this)">
+                        <div class="symbol">Pb</div>
+                        <div class="number">82</div>
+                    </div>
+                    <div class="element bismuth" onclick="handleElementClick(this)">
+                        <div class="symbol">Bi</div>
+                        <div class="number">83</div>
+                    </div>
+                    <div class="element polonium" onclick="handleElementClick(this)">
+                        <div class="symbol">Po</div>
+                        <div class="number">84</div>
+                    </div>
+                    <div class="element astatine" onclick="handleElementClick(this)">
+                        <div class="symbol">At</div>
+                        <div class="number">85</div>
+                    </div>
+                    <div class="element radon" onclick="handleElementClick(this)">
+                        <div class="symbol">Rn</div>
+                        <div class="number">86</div>
+                    </div>
+                            <!-- 第七行 -->
+                    <div class="element francium" onclick="handleElementClick(this)">
+                        <div class="symbol">Fr</div>
+                        <div class="number">87</div>
+                    </div>
+                    <div class="element radium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ra</div>
+                        <div class="number">88</div>
+                    </div>
+                    <!-- 第八行 -->
+                    <div class="element actinium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ac</div>
+                        <div class="number">89</div>
+                    </div>
+                    <div class="element thorium" onclick="handleElementClick(this)">
+                        <div class="symbol">Th</div>
+                        <div class="number">90</div>
+                    </div>
+                    <div class="element protactinium" onclick="handleElementClick(this)">
+                        <div class="symbol">Pa</div>
+                        <div class="number">91</div>
+                    </div>
+                    <div class="element uranium" onclick="handleElementClick(this)">
+                        <div class="symbol">U</div>
+                        <div class="number">92</div>
+                    </div>
+                    <div class="element neptunium" onclick="handleElementClick(this)">
+                        <div class="symbol">Np</div>
+                        <div class="number">93</div>
+                    </div>
+                    <div class="element plutonium" onclick="handleElementClick(this)">
+                        <div class="symbol">Pu</div>
+                        <div class="number">94</div>
+                    </div>
+                    <div class="element americium" onclick="handleElementClick(this)">
+                        <div class="symbol">Am</div>
+                        <div class="number">95</div>
+                    </div>
+                    <div class="element curium" onclick="handleElementClick(this)">
+                        <div class="symbol">Cm</div>
+                        <div class="number">96</div>
+                    </div>
+                    <div class="element berkelium" onclick="handleElementClick(this)">
+                        <div class="symbol">Bk</div>
+                        <div class="number">97</div>
+                    </div>
+                    <div class="element californium" onclick="handleElementClick(this)">
+                        <div class="symbol">Cf</div>
+                        <div class="number">98</div>
+                    </div>
+                    <div class="element einsteinium" onclick="handleElementClick(this)">
+                        <div class="symbol">Es</div>
+                        <div class="number">99</div>
+                    </div>
+                    <div class="element fermium" onclick="handleElementClick(this)">
+                        <div class="symbol">Fm</div>
+                        <div class="number">100</div>
+                    </div>
+                    <div class="element mendelevium" onclick="handleElementClick(this)">
+                        <div class="symbol">Md</div>
+                        <div class="number">101</div>
+                    </div>
+                    <div class="element nobelium" onclick="handleElementClick(this)">
+                        <div class="symbol">No</div>
+                        <div class="number">102</div>
+                    </div>
+                    <div class="element lawrencium" onclick="handleElementClick(this)">
+                        <div class="symbol">Lr</div>
+                        <div class="number">103</div>
+                    </div>
+                    <!-- 第九行 -->
+                    <div class="element rutherfordium" onclick="handleElementClick(this)">
+                        <div class="symbol">Rf</div>
+                        <div class="number">104</div>
+                    </div>
+                    <div class="element dubnium" onclick="handleElementClick(this)">
+                        <div class="symbol">Db</div>
+                        <div class="number">105</div>
+                    </div>
+                    <div class="element seaborgium" onclick="handleElementClick(this)">
+                        <div class="symbol">Sg</div>
+                        <div class="number">106</div>
+                    </div>
+                    <div class="element bohrium" onclick="handleElementClick(this)">
+                        <div class="symbol">Bh</div>
+                        <div class="number">107</div>
+                    </div>
+                    <div class="element hassium" onclick="handleElementClick(this)">
+                        <div class="symbol">Hs</div>
+                        <div class="number">108</div>
+                    </div>
+                    <div class="element meitnerium" onclick="handleElementClick(this)">
+                        <div class="symbol">Mt</div>
+                        <div class="number">109</div>
+                    </div>
+                    <div class="element darmstadtium" onclick="handleElementClick(this)">
+                        <div class="symbol">Ds</div>
+                        <div class="number">110</div>
+                    </div>
+                    <div class="element roentgenium" onclick="handleElementClick(this)">
+                        <div class="symbol">Rg</div>
+                        <div class="number">111</div>
+                    </div>
+                    <div class="element copernicium" onclick="handleElementClick(this)">
+                        <div class="symbol">Cn</div>
+                        <div class="number">112</div>
+                    </div>
+                    <div class="element nihonium" onclick="handleElementClick(this)">
+                        <div class="symbol">Nh</div>
+                        <div class="number">113</div>
+                    </div>
+                    <div class="element flerovium" onclick="handleElementClick(this)">
+                        <div class="symbol">Fl</div>
+                        <div class="number">114</div>
+                    </div>
+                    <div class="element moscovium" onclick="handleElementClick(this)">
+                        <div class="symbol">Mc</div>
+                        <div class="number">115</div>
+                    </div>
+                    <div class="element livermorium" onclick="handleElementClick(this)">
+                        <div class="symbol">Lv</div>
+                        <div class="number">116</div>
+                    </div>
+                    <div class="element tennessine" onclick="handleElementClick(this)">
+                        <div class="symbol">Ts</div>
+                        <div class="number">117</div>
+                    </div>
+                    <div class="element oganesson" onclick="handleElementClick(this)">
+                        <div class="symbol">Og</div>
+                        <div class="number">118</div>
+                    </div>
+            
+                </div> 
+                </div>
+                <span class="close" onclick="closePeriodicTable()">&times;</span>
+            </div>
+
+        </div>
+
+     
+
+
+    </div>
+
+    <!-- 弹窗部分 -->
+    <div id="alertBox" class="alert">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+        <p id="alertMsg">发生错误，请稍后再试</p>
+    </div>
+
+    <script>
+        // 获取弹窗和关闭按钮的元素
+        var modal = document.getElementById('periodic-table-modal');
+        var closeButton = document.getElementsByClassName('close')[0];
+
+        // 点击关闭按钮时关闭弹窗
+        closeButton.onclick = function() {
+            closeModal();
+        }
+        function setInputValue(symbol) {
+            var activeInput = document.activeElement;
+            activeInput.value += symbol;
+        }
+    </script>
+</body>
+</html>

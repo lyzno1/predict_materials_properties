@@ -1,0 +1,65 @@
+
+.periodic-table {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    grid-gap: 5px;
+    margin: 20px auto;
+    margin-top: 3%;
+    width: 90%;
+    max-width: 800px;
+    border: 2px solid black; /* Add border */
+    padding: 30px;
+    
+}
+
+.element {
+    position: relative;
+    width: 100%;
+    padding-bottom: 115.47%; 
+    margin-top: 10px; /* 上边距 */
+    margin-bottom: 10px; /* 下边距 */
+    margin-left: 5px; /* 左边距 */
+    margin-right: 5px; /* 右边距 */
+    cursor: pointer; /* 设置光标样式为手型 */
+    transition: background-color 0.3s ease; /* 添加颜色过渡效果 */
+    background-color: #333333; /* 底色 */
+    border: 2px solid rgba(120, 126, 240, 0.986); /* 边框颜色 */
+}
+
+.element:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Width of hexagon */
+    height: 100%;
+    /* background-color: rgba(226, 119, 165, 0.5); */
+}
+.element:hover {
+    background-color: #CCCCCC; /* 在鼠标悬停时改变背景颜色 */
+}
+.symbol {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    font-weight: bold;
+    color: #ebf1f3;
+}
+
+.number {
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    font-size: 10px;
+    color: #ebf1f3;
+}
+@keyframes periodicTable {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.periodic-table {
+    animation: periodicTable 1.5s;
+}

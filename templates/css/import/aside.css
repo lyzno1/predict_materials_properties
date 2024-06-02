@@ -1,0 +1,22 @@
+#aside {
+    display: flex;
+    align-items: center;
+    background-color: rgb(235, 233, 231);
+    height: calc(100vh - 80px);
+    width: 150px;
+    padding: 20px 0 0 0;
+    flex-direction: column;
+    box-shadow: 3px 0px 3px rgb(223, 220, 220);
+}
+
+#aside .el-row,
+#aside .el-row button {
+    width: 100%;
+    color: black;
+}
+
+#aside p {
+    width: 100%;
+    margin: 5px 0px;
+    border-top: solid 1px rgb(148, 148, 148);
+}

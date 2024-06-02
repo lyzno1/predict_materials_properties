@@ -1,0 +1,253 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(135deg, #ffffff 0%, #8f72ad 100%);
+    /* background: radial-gradient(circle, #764ba2, #667eea); */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: white;
+}
+
+.topbar {
+    width: 100%;
+    padding: 10px 0;
+    background-color: #333; /* 设置导航栏背景颜色 */
+}
+
+.topbar img {
+    width: 200px; /* 设置图片宽度 */
+    height: auto; /* 根据比例自适应高度 */
+}
+
+.icoimage {
+    width: 100%;
+}
+.icoimage img {
+    width: 100px; /* 设置图片宽度 */
+    height: auto; /* 根据比例自适应高度 */
+    margin-top: 60px;
+    margin-bottom: -100px;
+}
+
+.container {
+width: 90%;
+max-width: 400px;
+margin-top: 200px; /* 调整垂直居中的偏移量 */
+margin-left: 17px;
+}
+
+.input-group {
+display: flex;
+flex-direction: column;
+align-items: center;
+margin-top: 20px; /* 调整输入框之间的间距 */
+}
+
+input[type="text"] {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus {
+    box-shadow: 0 0 10px rgba(255,255,255,0.8);
+    outline: none;
+}
+
+button {
+    background: radial-gradient(circle, #312f2f, #798eeb);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    width: 50%;
+    transition: background-color 0.5s ease;
+}
+
+button:hover {
+    background: radial-gradient(circle, #eeeeee, #5577aa); /* 鼠标悬停时的渐变背景 */
+}
+
+#result {
+    margin-top: 20px;
+    background: rgba(255,255,255,0.1);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 2s;
+}
+.alert {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffdddd;
+    color: #333;
+    border-left: 4px solid #f44336;
+    padding: 20px;
+    margin: 0 auto;
+    width: 80%;
+    max-width: 400px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    text-align: center;
+    z-index: 1000; /* Ensure it sits above other content */
+    display: none; /* Hide by default */
+}
+
+.closebtn {
+    margin-left: 15px;
+    color: #f44336;
+    font-weight: bold;
+    float: right;
+    font-size: 22px;
+    line-height: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.closebtn:hover {
+    color: black;
+}
+
+
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    opacity: 1;
+    transition: opacity 0.5s ease; /* 添加渐变过渡效果 */
+}
+
+.modal-content {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fefefe;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 60%;
+    max-height: 80vh;
+    box-shadow: 0 20px 20px rgba(0,0,0,0.8); /* 增加模糊半径和不透明度 */
+}
+
+.modal.hidden {
+    opacity: 0; /* 渐变透明度为 0 */
+    pointer-events: none; /* 关闭点击事件，防止用户点击关闭弹窗时出现问题 */
+}
+
+.close {
+    color: #aaa;
+    position: absolute;
+    top: 1px; /* 调整按钮到顶部的距离 */
+    right: 10px; /* 调整按钮到右边的距离 */
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+@keyframes animate_4010 {
+0%,100% {
+    transform: translateY(-20px);
+}
+
+50% {
+    transform: translateY(20px);
+}
+}
+
+.main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+
+.btn-container {
+    display: flex;
+    flex-direction: column; /* 让按钮垂直排列 */
+    align-items: center; /* 居中对齐 */
+}
+
+.btn {
+    width: 170px;
+    height: 60px;
+    font-size: 18px;
+    background: #ffffff;
+    border: none;
+    border-radius: 50px;
+    color: #000;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.4s;
+    margin-bottom: 10px;
+}
+
+.btn:hover {
+    box-shadow: inset 0 0 0 4px #ef476f, 
+                inset 0 0 0 8px #ffd166, 
+                inset 0 0 0 12px #06d6a0,
+                inset 0 0 0 16px #118ab2;
+    background: #073b4c;
+    color: #fff;
+}
+
+.btn1 {
+    background-color: #ffffff;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    padding: 15px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border: none;
+    margin-bottom: 10px;
+}
+    
+    
+    
+.btn1:hover {
+background-image: linear-gradient(90deg, #53cbef 0%, #dcc66c 50%, #ffa3b6 75%, #53cbef 100%);
+animation: slidernbw 5s linear infinite;
+color: #000;
+}
+
+@keyframes slidernbw {
+to {
+    background-position: 20vw;
+}
+}
