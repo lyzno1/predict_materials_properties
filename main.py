@@ -319,7 +319,7 @@ class Attention_structer_model(nn.Module):
 
         output = attention_output[:, -1, :]  # 选择最后一个时间步的隐藏状态
 
-        # 线性层
+        # 全连接层
         output = self.linear1(self.relu2(self.linear(output)))
 
         output = output.squeeze(1)
