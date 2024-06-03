@@ -294,7 +294,7 @@ class Attention_structer_model(nn.Module):
         bond = self.bond_expansion(x[:, :, 2].float())
         embedded_data = torch.cat([atom1, atom2, bond], dim=-1)
 
-        # GRU 输入数据格式应为 (batch_size, seq_len, input_size)
+        # shape: (batch_size, seq_len, input_size)
         gru_output, _ = self.gru(embedded_data)
 
         # 调用 self-attention
