@@ -42,11 +42,11 @@ def get_atom_distance(structure, atom_i, atom_j):  # 获取元素之间的距离
     return distance
 
 
-def get_atomic_number(symbol): #元素符号转化为原子序数
+def get_atomic_number(symbol):  # 元素符号转化为原子序数
     return Element(symbol).number
 
 
-class TripletStats:
+class TripletStats: # 统计三元组数量
     def __init__(self, structures):
         self.structures = structures
         self.triplet_counts = self.calculate_triplet_counts()
@@ -392,11 +392,11 @@ if __name__ == '__main__':
         autoload=False,
         subset=[
             # "matbench_jdft2d",  # 636
-            "matbench_phonons",  # 1,265
+            # "matbench_phonons",  # 1,265
             # "matbench_dielectric",  # 4,764
             # "matbench_log_gvrh",  # 10,987
             # "matbench_log_kvrh",  # 10,987
-            # "matbench_perovskites",  # 1w8
+            "matbench_perovskites",  # 1w8
             # "matbench_mp_gap",   # 回归 10.6w
             # "matbench_mp_e_form",  # 回归 13w
         ]
