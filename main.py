@@ -14,12 +14,14 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import argparse
 import torch.nn.functional as F
+import random
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 # bash megnet_orig.sh
 parser = argparse.ArgumentParser(description='liu_attention')
 parser.add_argument('--batch_size', type=int, default=32, help='number of batch size')
 parser.add_argument('--gamma', type=float, default=1.8, help='Gamma value for RBF')
+parser.add_argument('--cutoff', type=int, default=3, help='Cutoff length for triplets')
 # parser.add_argument("--max_length", type=int, default=96, help="Maximum length parameter")
 # parser.add_argument('--e', type=int, default=0, help='number of node embedding dim')
 
@@ -370,10 +372,18 @@ def visualize_results(results_list, mb_dataset_name): # 可视化结果并保存
         if f.tell() != 0:
             f.write('\n')
         for fold_num, mae in enumerate(results_list):
-            f.write(f"batch_size:{batch_size}, Fold {fold_num}, MAE:{mae}\n")
-        f.write(f"{mb_dataset_name}, batch_size:{batch_size}, gamma:{args.gamma}, Average MAE: {average_mae}\n")
+            f.write(f"Fold {fold_num}, MAE:{mae}\n")
+        f.write(f"{mb_dataset_name}, batch_size:{batch_size}, gamma:{args.gamma}, cutoff:{args.cutoff}, Average MAE: {average_mae}\n")
     results_list.clear()
 
+def set_random_seed(seed): # 固定随机种子
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
 
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -381,22 +391,17 @@ if __name__ == '__main__':
         torch.cuda.set_device(0)
 
     init_seed = 42
-    torch.manual_seed(init_seed)
-    torch.cuda.manual_seed(init_seed)
-    torch.cuda.manual_seed_all(init_seed)
-    np.random.seed(init_seed)  # 用于numpy的随机数
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+    set_random_seed(init_seed)
 
     mb = MatbenchBenchmark(
         autoload=False,
         subset=[
             # "matbench_jdft2d",  # 636
-            # "matbench_phonons",  # 1,265
+            "matbench_phonons",  # 1,265
             # "matbench_dielectric",  # 4,764
             # "matbench_log_gvrh",  # 10,987
             # "matbench_log_kvrh",  # 10,987
-            "matbench_perovskites",  # 1w8
+            # "matbench_perovskites",  # 1w8
             # "matbench_mp_gap",   # 回归 10.6w
             # "matbench_mp_e_form",  # 回归 13w
         ]
@@ -407,13 +412,14 @@ if __name__ == '__main__':
     mae_list = []
 
     for task in mb.tasks:
+        set_random_seed(init_seed)
         task.load()
         dataset_name = task.dataset_name
         for fold in task.folds:
 
             train_inputs, train_outputs = task.get_train_and_val_data(fold)
 
-            max_length = TripletStats(train_inputs).get_average() * 3 # 用于截断/补齐
+            max_length = TripletStats(train_inputs).get_average() * args.cutoff # 用于截断/补齐
             # max_length = args.max_length
             x_input = torch.tensor(get_triplets(train_inputs, max_length))  # 处理输入
 
