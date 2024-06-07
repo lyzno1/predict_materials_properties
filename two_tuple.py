@@ -251,6 +251,19 @@ class BondExpansionRBF(nn.Module):
         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
         return rbf_values
 
+class BondExpansionLearnable(nn.Module):
+    def __init__(self, num_features: int = 10, gamma: float = 1.0):
+        super(BondExpansionLearnable, self).__init__()
+        self.num_features = num_features
+        self.centers = nn.Parameter(torch.randn(num_features))
+        self.gamma = gamma #nn.Parameter(torch.one(1))
+
+    def __call__(self, bond_dist: torch.Tensor) -> torch.Tensor:
+        distance_to_centers = torch.abs(self.centers - bond_dist.unsqueeze(-1))
+        rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2)
+
+        return rbf_values
+
 # 神经网络模型
 class AttentionStructureModel(nn.Module):
     def __init__(self, embedding_dim=10, hidden_size=64, output_size=1, dropout=0.2, num_features=10):
@@ -386,13 +399,13 @@ def visualize_results(results_list, mb_dataset_name): # 可视化结果并保存
     print(f"Average MAE across all folds: {average_mae}")
 
     # 写入结果到文件
-    # with open('results.txt', 'a') as f:
-    #     if f.tell() != 0:
-    #         f.write('\n')
-    #     for fold_num, mae in enumerate(results_list):
-    #         f.write(f"Fold {fold_num}, MAE:{mae}\n")
-    #     f.write(f"{mb_dataset_name}, batch_size:{batch_size}, gamma:{args.gamma}, cutoff:{args.cutoff}, Average MAE: {average_mae}\n")
-    # results_list.clear()
+    with open('add_angle.txt', 'a') as f:
+        if f.tell() != 0:
+            f.write('\n')
+        for fold_num, mae in enumerate(results_list):
+            f.write(f"Fold {fold_num}, MAE:{mae}\n")
+        f.write(f"{mb_dataset_name}, batch_size:{batch_size}, gamma:{args.gamma}, Average MAE: {average_mae}\n")
+    results_list.clear()
 
 def set_random_seed(seed): # 固定随机种子
     random.seed(seed)
@@ -414,8 +427,8 @@ if __name__ == '__main__':
     mb = MatbenchBenchmark(
         autoload=False,
         subset=[
-            "matbench_phonons",  # 1,265
-            # "matbench_jdft2d",  # 636
+            # "matbench_phonons",  # 1,265
+            "matbench_jdft2d",  # 636
             # "matbench_dielectric",  # 4,764
             # "matbench_log_gvrh",  # 10,987
             # "matbench_log_kvrh",  # 10,987
