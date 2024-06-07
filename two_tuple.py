@@ -14,110 +14,35 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import argparse
 import torch.nn.functional as F
+import random
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from transformers import XLNetModel, XLNetConfig
 
 # bash megnet_orig.sh
 parser = argparse.ArgumentParser(description='liu_attention')
-parser.add_argument('--batch_size', type=int, default=64, help='number of batch size')
+parser.add_argument('--batch_size', type=int, default=32, help='number of batch size')
+parser.add_argument('--gamma', type=float, default=1.8, help='Gamma value for RBF')
+parser.add_argument('--cutoff', type=int, default=3, help='Cutoff length for triplets')
+# parser.add_argument("--max_length", type=int, default=96, help="Maximum length parameter")
 # parser.add_argument('--e', type=int, default=0, help='number of node embedding dim')
 
 args = parser.parse_args()
 
 
-def get_atom_distance(structure, atom_i, atom_j):  # 获取元素之间的距离
-    """
-        计算两个原子之间的距离
-        Args:
-            structure (Structure): pymatgen Structure 对象
-            atom_i (int): 第一个原子的索引
-            atom_j (int): 第二个原子的索引
-        Returns:
-            distance (float): 两个原子之间的距离
-        """
-    site_i = structure[atom_i]
-    site_j = structure[atom_j]
-    distance = site_i.distance(site_j)
-    return distance
+# 获取原子序数
+def get_atomic_number(element):
+    from pymatgen.core.periodic_table import Element
+    return Element(element).Z
 
+# 获取原子距离
+def get_atom_distance(structure, i, j):
+    return structure.get_distance(i, j)
 
-def get_atomic_number(symbol): #元素符号转化为原子序数
-    return Element(symbol).number
+# 获取原子角度
+def get_angle(structure, i, j, k):
+    return structure.get_angle(i, j, k)
 
-
-def tripletshu(structures):  # 获得数据集中平均长度
-    sum = 0
-    for structure in structures:
-        len_triplet = (len(structure) * (len(structure) - 1))/2
-        sum += len_triplet
-    # max_length = max(len(structure) for structure in structures)  # 获取所有结构中的最大长度
-    # max_tripletshu = ((max_length - 1) * max_length) / 2
-    # return int(max_tripletshu)
-    average = sum/len(structures)
-    return int(average)
-
-
-def get_pair_index(atomic_number_i, atomic_number_j):
-    if atomic_number_i > atomic_number_j:
-        atomic_number_i, atomic_number_j = atomic_number_j, atomic_number_i
-    return (atomic_number_i - 1) * 118 + (atomic_number_j - 1) - ((atomic_number_i - 1) * atomic_number_i) // 2
-
-# def get_pairs(structures, max_length):
-#     all_tensor_data = []  # 存储所有结构的四元组数据
-#     for structure in structures:
-#         tensor_data = []
-#         num_atoms = len(structure)
-#
-#         if num_atoms == 1:
-#             lattice = structure.lattice
-#             atom_symbol = structure[0].species_string
-#             atomic_number = get_atomic_number(atom_symbol)
-#             pair_index = get_pair_index(atomic_number, atomic_number)
-#             pair_data = (pair_index, atomic_number, atomic_number, lattice.a)
-#             tensor_data.append(pair_data)
-#             pair_data = (pair_index, atomic_number, atomic_number, lattice.b)
-#             tensor_data.append(pair_data)
-#             pair_data = (pair_index, atomic_number, atomic_number, lattice.c)
-#             tensor_data.append(pair_data)
-#             all_tensor_data.append(tensor_data)
-#             continue
-#
-#         for i in range(num_atoms):
-#             element_i = structure[i].species_string
-#             atomic_number_i = get_atomic_number(element_i)
-#             for j in range(i + 1, num_atoms):
-#                 element_j = structure[j].species_string
-#                 atomic_number_j = get_atomic_number(element_j)
-#                 distance = get_atom_distance(structure, i, j)
-#
-#                 # 将原子对转换为对应的索引
-#                 pair_index = get_pair_index(atomic_number_i, atomic_number_j)
-#                 # 存储原始的四元组数据
-#                 pair_data = (pair_index, atomic_number_i, atomic_number_j, distance)
-#                 tensor_data.append(pair_data)
-#
-#         # 对四元组列表按照最后一个元素（距离信息）进行升序排序
-#         tensor_data.sort(key=lambda x: x[3], reverse=False)
-#
-#         # 截断数据到max_length长度
-#         if len(tensor_data) > max_length:
-#             tensor_data = tensor_data[:max_length]
-#         # 将当前结构的四元组数据添加到总列表中
-#         all_tensor_data.append(tensor_data)
-#
-#     # 对不足最大长度的子列表进行补充
-#     for sublist in all_tensor_data:
-#         while len(sublist) < max_length:
-#             sublist.append((0, 0, 0, 0.0))
-#
-#     return all_tensor_data
-
-
-
-
-# 距离bond expansion处理
-def get_pairs(structures, max_length):
-    all_tensor_data = []
+def get_triplets(structures, max_len):  # 处理成三元组
+    all_tensor_data = []  # 存储所有结构的三元组数据
     for structure in structures:
         tensor_data = []
         num_atoms = len(structure)
@@ -126,128 +51,277 @@ def get_pairs(structures, max_length):
             lattice = structure.lattice
             atom_symbol = structure[0].species_string
             atomic_number = get_atomic_number(atom_symbol)
-            pair_index = get_pair_index(atomic_number, atomic_number)
-            tensor_data.append((pair_index, lattice.a))
-            tensor_data.append((pair_index, lattice.b))
-            tensor_data.append((pair_index, lattice.c))
+            triplet_data = (atomic_number, atomic_number, lattice.a)
+            tensor_data.append(triplet_data)
+            triplet_data = (atomic_number, atomic_number, lattice.b)
+            tensor_data.append(triplet_data)
+            triplet_data = (atomic_number, atomic_number, lattice.c)
+            tensor_data.append(triplet_data)
             all_tensor_data.append(tensor_data)
             continue
 
         for i in range(num_atoms):
             element_i = structure[i].species_string
-            atomic_number_i = get_atomic_number(element_i)
             for j in range(i + 1, num_atoms):
                 element_j = structure[j].species_string
-                atomic_number_j = get_atomic_number(element_j)
                 distance = get_atom_distance(structure, i, j)
 
-                pair_index = get_pair_index(atomic_number_i, atomic_number_j)
-                tensor_data.append((pair_index, distance))
+                # 将原子转换为对应的原子序数
+                atomic_number_i = get_atomic_number(element_i)
+                atomic_number_j = get_atomic_number(element_j)
+                # 存储原始的三元组数据
+                triplet_data = (atomic_number_i, atomic_number_j, distance)
+                tensor_data.append(triplet_data)
 
-        tensor_data.sort(key=lambda x: x[1])
+        # 对三元组列表按照最后一个元素（距离信息）进行升序排序
+        tensor_data.sort(key=lambda x: x[2], reverse=False)
 
-        if len(tensor_data) > max_length:
-            tensor_data = tensor_data[:max_length]
+        # 截断数据到max_length长度
+        if len(tensor_data) > max_len:
+            tensor_data = tensor_data[:max_len]
+        # 将当前结构的三元组数据添加到总列表中
+        all_tensor_data.append(tensor_data)
+
+    # 对不足最大长度的子列表进行补充
+    for sublist in all_tensor_data:
+        while len(sublist) < max_len:
+            sublist.append((0, 0, 0.0))
+
+    return all_tensor_data
+
+# 生成距离-距离-角度三元组
+def get_triplets_with_angles(structures, max_len):
+    all_tensor_data = []
+    for structure in structures:
+        tensor_data = []
+        num_atoms = len(structure)
+
+        if num_atoms == 1:
+            tensor_data = [(0.0, 0.0, 0.0)] * max_len
+        else:
+            for i in range(num_atoms):
+                for j in range(i + 1, num_atoms):
+                    for k in range(j + 1, num_atoms):
+                        distance_ij = get_atom_distance(structure, i, j)
+                        distance_jk = get_atom_distance(structure, j, k)
+                        angle_ijk = get_angle(structure, i, j, k)
+
+                        # 归一化角度
+                        normalized_angle = angle_ijk / 180.0
+
+                        # 存储三元组数据
+                        triplet_data = (distance_ij, distance_jk, normalized_angle)
+                        tensor_data.append(triplet_data)
+
+            tensor_data.sort(key=lambda x: x[2], reverse=True)
+
+            if len(tensor_data) > max_len:
+                tensor_data = tensor_data[:max_len]
+
+        # 确保每个结构的tensor_data长度一致
+        while len(tensor_data) < max_len:
+            tensor_data.append((0.0, 0.0, 0.0))
 
         all_tensor_data.append(tensor_data)
 
-    for sublist in all_tensor_data:
-        while len(sublist) < max_length:
-            sublist.append((0, 0.0))
-
     return all_tensor_data
+
+
+class TripletStats: # 统计三元组数量
+    def __init__(self, structures):
+        self.structures = structures
+        self.triplet_counts = self.calculate_triplet_counts()
+        self.average = self.calculate_average()
+        self.max_value = max(self.triplet_counts)
+        self.min_value = min(self.triplet_counts)
+        self.median = self.calculate_median()
+        self.most_common = self.calculate_most_common()
+        self.least_common = self.calculate_least_common()
+        self.new_max, self.new_min = self.calculate_trimmed_extremes()
+
+    def calculate_triplet_counts(self):
+        triplet_counts = []
+        for structure in self.structures:
+            len_triplet = (len(structure) * (len(structure) - 1)) // 2
+            triplet_counts.append(len_triplet)
+        return triplet_counts
+
+    def calculate_average(self):
+        return sum(self.triplet_counts) / len(self.triplet_counts)
+
+    def calculate_median(self):
+        sorted_counts = sorted(self.triplet_counts)
+        n = len(sorted_counts)
+        if n % 2 == 1:
+            return sorted_counts[n // 2]
+        else:
+            return (sorted_counts[n // 2 - 1] + sorted_counts[n // 2]) / 2
+
+    def calculate_most_common(self):
+        from collections import Counter
+        count = Counter(self.triplet_counts)
+        return count.most_common(1)[0][0]
+
+    def calculate_least_common(self):
+        from collections import Counter
+        count = Counter(self.triplet_counts)
+        return count.most_common()[-1][0]
+
+    def calculate_trimmed_extremes(self):
+        trimmed_counts = [x for x in self.triplet_counts if x != self.max_value and x != self.min_value]
+        if trimmed_counts:
+            new_max = max(trimmed_counts)
+            new_min = min(trimmed_counts)
+            return new_max, new_min
+        else:
+            return None, None  # 当所有值都相同时，去除后为空列表
+
+    def get_max_value(self):
+        print("最大值:", self.max_value)
+        return int(self.max_value)
+
+    def get_min_value(self):
+        print("最小值:", self.min_value)
+        return int(self.min_value)
+
+    def get_median(self):
+        print("中位数:", self.median)
+        return int(self.median)
+
+    def get_average(self):
+        print("平均数:", self.average)
+        return int(self.average)
+
+    def get_most_common(self):
+        print("出现最多的数:", self.most_common)
+        return int(self.most_common)
+
+    def get_least_common(self):
+        print("出现最少的数:", self.least_common)
+        return int(self.least_common)
+
+    def get_new_max(self):
+        print("去除最大最小值之后的最大值:", self.new_max)
+        return int(self.new_max)
+
+    def get_new_min(self):
+        print("去除最大最小值之后的最小值:", self.new_min)
+        return int(self.new_min)
+
+class StructureDataset(Dataset):
+    def __init__(self, distance_input, angle_input, target):
+        self.distance_input = distance_input
+        self.angle_input = angle_input
+        self.target = target
+
+    def __len__(self):
+        return len(self.distance_input)
+
+    def __getitem__(self, idx):
+        distance_input = self.distance_input[idx]
+        angle_input = self.angle_input[idx]
+        target = self.target.iloc[idx]
+
+        return {'distance_input': distance_input, 'angle_input': angle_input, 'target': target}
+
+# 角度展开处理
+class AngleExpansion(nn.Module):
+    def __init__(self, num_features: int = 10):
+        super(AngleExpansion, self).__init__()
+        self.num_features = num_features
+
+    def forward(self, angles: torch.Tensor) -> torch.Tensor:
+        angle_features = [torch.ones_like(angles), angles]
+        for i in range(2, self.num_features):
+            Tn = 2 * angles * angle_features[-1] - angle_features[-2]
+            angle_features.append(Tn)
+        angle_features = torch.stack(angle_features, dim=-1)
+        return angle_features
+
+# 距离展开处理
 class BondExpansionRBF(nn.Module):
-    def __init__(self, num_features: int = 16, gamma: float = 1.0):
+    def __init__(self, num_features: int = 10, gamma: float = 1.0):
         super(BondExpansionRBF, self).__init__()
         self.num_features = num_features
         self.gamma = gamma
 
-    def __call__(self, bond_dist: torch.Tensor) -> torch.Tensor:
-        # 生成特征中心张量
+    def forward(self, bond_dist: torch.Tensor) -> torch.Tensor:
         feature_centers = torch.arange(1, self.num_features + 1, device=bond_dist.device).float()
-
-        # 计算每个距离到各个特征中心的欧几里得距离
         distance_to_centers = torch.abs(feature_centers - bond_dist.unsqueeze(-1))
-
-        # 使用高斯径向基函数计算每个距离对应的特征值
         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
-
         return rbf_values
 
+# 神经网络模型
+class AttentionStructureModel(nn.Module):
+    def __init__(self, embedding_dim=10, hidden_size=64, output_size=1, dropout=0.2, num_features=10):
+        super(AttentionStructureModel, self).__init__()
+        self.embedding = nn.Embedding(119, embedding_dim)
+        self.bond_expansion = BondExpansionRBF(num_features=num_features, gamma=1.0)
+        self.angle_expansion = AngleExpansion(num_features=int(num_features))
 
-class StructureDataset(Dataset):
-    def __init__(self, structure, target):
-        self.input = structure
-        self.target = target
-
-    def __len__(self):
-        return len(self.input)
-
-    def __getitem__(self, idx):
-        input = self.input[idx]
-        target = self.target.iloc[idx]
-
-        # 返回合金描述和目标值
-        return {'input': input, 'target': target}
-
-
-class Attention_structer_model(nn.Module):
-    def __init__(self, embedding_dim=10, hidden_size=32, output_size=1, dropout=0.2):
-        super(Attention_structer_model, self).__init__()
-        self.embedding = nn.Embedding(7021, 2 * embedding_dim)
-        # self.embedding1 = nn.Embedding(119, embedding_dim)
-        self.bond_expansion = BondExpansionRBF(num_features=12, gamma=1.0)
-
-        config = XLNetConfig(d_model=hidden_size, n_layer=2, dropout=dropout)
-        self.xlnet = XLNetModel(config)
+        self.gru_distances = nn.GRU(input_size=embedding_dim * 3, hidden_size=hidden_size, batch_first=True, num_layers=3, dropout=dropout)
+        self.gru_angles = nn.GRU(input_size=num_features * 3, hidden_size=hidden_size, batch_first=True, num_layers=3, dropout=dropout)
 
         self.self_attention = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True)
-
         self.linear_feed = nn.Linear(hidden_size, 1024)
         self.relu1 = nn.ReLU()
         self.linear_forward = nn.Linear(1024, hidden_size)
 
         self.self_attention1 = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True, dropout=0.2)
-        self.linear = nn.Linear(hidden_size, 32)
+        self.linear = nn.Linear(hidden_size * 2, 32)
         self.relu2 = nn.ReLU()
         self.linear1 = nn.Linear(32, output_size)
-        self.layer_norm = nn.LayerNorm(hidden_size)
+        self.final_layers = nn.Sequential(
+            nn.Linear(hidden_size * 2, 1024),
+            nn.SiLU(),
+            nn.Linear(1024, 256),
+            nn.SiLU(),
+            nn.Linear(256, 64),
+            nn.SiLU(),
+            nn.Linear(64, output_size)
+        )
+        self.layer_norm1 = nn.LayerNorm(hidden_size)
+        self.layer_norm2 = nn.LayerNorm(hidden_size)
+        self.layer_norm3 = nn.LayerNorm(hidden_size)
+        self.layer_norm4 = nn.LayerNorm(hidden_size)
 
-    def forward(self, x):
-        # 嵌入元素和键扩展
-        atomic_pair = self.embedding(x[:, :, 0].to(torch.long))
-        # atom1 = self.embedding1(x[:, :, 1].to(torch.long))
-        # atom2 = self.embedding1(x[:, :, 2].to(torch.long))
-        bond = self.bond_expansion(x[:, :, 1].float())
-        embedded_data = torch.cat([atomic_pair, bond], dim=-1)
+    def forward(self, distances, angles):
+        atom1 = self.embedding(distances[:, :, 0].to(torch.long))
+        atom2 = self.embedding(distances[:, :, 1].to(torch.long))
+        bond = self.bond_expansion(distances[:, :, 2].float())
+        embedded_distances = torch.cat([atom1, atom2, bond], dim=-1)
 
-        # XLNet 输入数据格式应为 (batch_size, seq_len, input_size)
-        xlnet_output = self.xlnet(inputs_embeds=embedded_data).last_hidden_state
+        bond1 = self.bond_expansion(angles[:, :, 0].float())
+        bond2 = self.bond_expansion(angles[:, :, 1].float())
+        angle = self.angle_expansion(angles[:, :, 2].float())
+        embedded_angles = torch.cat([bond1, bond2, angle], dim=-1)
 
-        # 调用 self-attention
-        attention_output, _ = self.self_attention(xlnet_output, xlnet_output, xlnet_output)
-        attention_output = self.layer_norm(xlnet_output + attention_output)
+        gru_output_distances, _ = self.gru_distances(embedded_distances)
+        gru_output_angles, _ = self.gru_angles(embedded_angles)
 
-        feed_forward_output = self.linear_feed(attention_output)
-        feed_forward_output = self.relu1(feed_forward_output)
-        feed_forward_output = self.linear_forward(feed_forward_output)
-        attention_output = self.layer_norm(attention_output + feed_forward_output)
+        attention_output_distances, _ = self.self_attention(gru_output_distances, gru_output_distances, gru_output_distances)
+        attention_output_angles, _ = self.self_attention(gru_output_angles, gru_output_angles, gru_output_angles)
 
-        attention_output, _ = self.self_attention(attention_output, attention_output, attention_output)
-        attention_output = self.layer_norm(attention_output + attention_output)
+        attention_output_distances = self.layer_norm1(gru_output_distances + attention_output_distances)
+        attention_output_angles = self.layer_norm1(gru_output_angles + attention_output_angles)
 
-        feed_forward_output = self.linear_feed(attention_output)
-        feed_forward_output = self.relu1(feed_forward_output)
-        feed_forward_output = self.linear_forward(feed_forward_output)
-        attention_output = self.layer_norm(attention_output + feed_forward_output)
+        feed_forward_output_distances = self.linear_feed(attention_output_distances)
+        feed_forward_output_distances = self.relu1(feed_forward_output_distances)
+        feed_forward_output_distances = self.linear_forward(feed_forward_output_distances)
 
-        # 调用 self-attention1
-        attention_output, _ = self.self_attention1(attention_output, attention_output, attention_output)
+        # feed_forward_output_angles = self.linear_feed(attention_output_angles)
+        # feed_forward_output_angles = self.relu1(feed_forward_output_angles)
+        # feed_forward_output_angles = self.linear_forward(feed_forward_output_angles)
 
-        output = attention_output[:, -1, :]  # 选择最后一个时间步的隐藏状态
+        attention_output_distances = self.layer_norm2(attention_output_distances + feed_forward_output_distances)
+        # attention_output_angles = self.layer_norm2(attention_output_angles + feed_forward_output_angles)
 
-        # 线性层
-        output = self.linear1(self.relu2(self.linear(output)))
+        attention_output_distances, _ = self.self_attention1(attention_output_distances, attention_output_distances, attention_output_distances)
+        # attention_output_angles, _ = self.self_attention1(attention_output_angles, attention_output_angles, attention_output_angles)
+
+        combined_output = torch.cat([attention_output_distances[:, -1, :], attention_output_angles[:, -1, :]], dim=-1)
+
+        output = self.final_layers(combined_output)
 
         output = output.squeeze(1)
 
@@ -255,51 +329,79 @@ class Attention_structer_model(nn.Module):
 
 
 class liu_attention_Lightning(pl.LightningModule):
-    def __init__(self, embedding_dim=10, hidden_size=32, output_size=1, dropout=0):
+    def __init__(self):
         super(liu_attention_Lightning, self).__init__()
-        self.model = Attention_structer_model(embedding_dim=embedding_dim, hidden_size=hidden_size,
-                                              output_size=output_size, dropout=dropout)
+        self.model = AttentionStructureModel()
+
+    def forward(self, distances, angles):
+        distances = distances.float()
+        angles = angles.float()
+        return self.model(distances, angles)
 
     def training_step(self, batch, batch_idx):
-        x, label = batch['input'], batch['target'].float()
-        predict = self.model(x)
-        loss = F.l1_loss(predict, label)
-
+        distances = batch['distance_input'].float()
+        angles = batch['angle_input'].float()
+        targets = batch['target'].float()
+        outputs = self(distances, angles)
+        loss = nn.L1Loss()(outputs, targets)
         self.log('train_loss', loss, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, label = batch['input'], batch['target'].float()
-        predict = self.model(x)
-        val_loss = F.l1_loss(predict, label)
+        distances = batch['distance_input'].float()
+        angles = batch['angle_input'].float()
+        targets = batch['target'].float()
+        outputs = self(distances, angles)
+        val_loss = nn.L1Loss()(outputs, targets)
         self.log('val_loss', val_loss, on_epoch=True, prog_bar=True)
         return val_loss
 
     def test_step(self, batch, batch_idx):
-        x, label = batch['input'], batch['target'].float()
-        predict = self.model(x)
-
-        test_loss = F.l1_loss(predict, label)
+        distances = batch['distance_input'].float()
+        angles = batch['angle_input'].float()
+        targets = batch['target'].float()
+        outputs = self(distances, angles)
+        test_loss = F.l1_loss(outputs, targets)
         self.log('test_mae', test_loss, on_epoch=True, prog_bar=True)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
-        return optimizer
+        return torch.optim.Adam(self.parameters(), lr=0.001)
 
-def visualize_results(results_list): # 可视化结果并保存到文件中
+
+def prepare_dataloader(train_inputs, train_outputs, max_length, batch_size, num_worker):
+    distance_inputs = torch.tensor(get_triplets(train_inputs, max_length), dtype=torch.float32)
+    angle_inputs = torch.tensor(get_triplets_with_angles(train_inputs, max_length), dtype=torch.float32)
+
+    dataset = StructureDataset(distance_inputs, angle_inputs, train_outputs)
+    train_data, val_data = train_test_split(dataset, test_size=0.2, random_state=42)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_worker, persistent_workers=True)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=num_worker, persistent_workers=True)
+
+    return train_loader, val_loader
+
+def visualize_results(results_list, mb_dataset_name): # 可视化结果并保存到文件中
     for i, mae in enumerate(results_list):
         print(f"Fold {i} MAE: {mae}")
     average_mae = sum(mae_list) / len(mae_list)
     print(f"Average MAE across all folds: {average_mae}")
 
     # 写入结果到文件
-    with open('results.txt', 'a') as f:
-        if f.tell() != 0:
-            f.write('\n')
-        for fold_num, mae in enumerate(results_list):
-            f.write(f"batch_size:{batch_size}, Fold {fold_num}, MAE:{mae}\n")
-        f.write(f"batch_size:{batch_size}, Average MAE: {average_mae}\n")
+    # with open('results.txt', 'a') as f:
+    #     if f.tell() != 0:
+    #         f.write('\n')
+    #     for fold_num, mae in enumerate(results_list):
+    #         f.write(f"Fold {fold_num}, MAE:{mae}\n")
+    #     f.write(f"{mb_dataset_name}, batch_size:{batch_size}, gamma:{args.gamma}, cutoff:{args.cutoff}, Average MAE: {average_mae}\n")
+    # results_list.clear()
 
+def set_random_seed(seed): # 固定随机种子
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
 
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -307,18 +409,13 @@ if __name__ == '__main__':
         torch.cuda.set_device(0)
 
     init_seed = 42
-    torch.manual_seed(init_seed)
-    torch.cuda.manual_seed(init_seed)
-    torch.cuda.manual_seed_all(init_seed)
-    np.random.seed(init_seed)  # 用于numpy的随机数
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+    set_random_seed(init_seed)
 
     mb = MatbenchBenchmark(
         autoload=False,
         subset=[
-            # "matbench_jdft2d",  # 636
             "matbench_phonons",  # 1,265
+            # "matbench_jdft2d",  # 636
             # "matbench_dielectric",  # 4,764
             # "matbench_log_gvrh",  # 10,987
             # "matbench_log_kvrh",  # 10,987
@@ -331,23 +428,17 @@ if __name__ == '__main__':
         torch.cuda.set_device(0)
     # 保存每个fold的MAE
     mae_list = []
-
     for task in mb.tasks:
+        set_random_seed(init_seed)
         task.load()
+        dataset_name = task.dataset_name
         for fold in task.folds:
             train_inputs, train_outputs = task.get_train_and_val_data(fold)
 
-            max_length = tripletshu(train_inputs) * 3 # 用于截断/补齐
-            x_input = torch.tensor(get_pairs(train_inputs, max_length))  # 处理输入
+            max_length = TripletStats(train_inputs).get_average() * args.cutoff
 
-            dataset = StructureDataset(x_input, train_outputs)
-            train_data, val_data = train_test_split(dataset, test_size=0.2, random_state=42)
-            batch_size = args.batch_size
-            num_worker = 4
-            train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_worker,
-                                      persistent_workers=True)
-            val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=num_worker,
-                                    persistent_workers=True)
+            train_loader, val_loader = prepare_dataloader(train_inputs, train_outputs, max_length, args.batch_size,
+                                                          num_worker=4)
 
             lightning_model = liu_attention_Lightning()
 
@@ -355,20 +446,21 @@ if __name__ == '__main__':
                                                 mode="min")
             checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1)
 
-            trainer = pl.Trainer(max_epochs=1500, callbacks=[early_stop_callback,checkpoint_callback],
+            trainer = pl.Trainer(max_epochs=2000, callbacks=[early_stop_callback, checkpoint_callback],
                                  log_every_n_steps=50)
             trainer.fit(model=lightning_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-            # 加载验证损失最小的模型权重
             best_model_path = checkpoint_callback.best_model_path
             lightning_model = liu_attention_Lightning.load_from_checkpoint(best_model_path)
 
-            # 测试
+            torch.save(lightning_model.state_dict(), f'phonons_model_fold_{fold}.pth')
+
             lightning_model.eval()
             test_inputs, test_outputs = task.get_test_data(fold, include_target=True)
-            test_inputs = torch.tensor(get_pairs(test_inputs, max_length))
-            test_dataset = StructureDataset(test_inputs, test_outputs)
-            test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=num_worker,
+            test_distance_inputs = torch.tensor(get_triplets(test_inputs, max_length), dtype=torch.float32)
+            test_angle_inputs = torch.tensor(get_triplets_with_angles(test_inputs, max_length), dtype=torch.float32)
+            test_dataset = StructureDataset(test_distance_inputs, test_angle_inputs, test_outputs)
+            test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, num_workers=4,
                                      persistent_workers=True)
 
             predict = trainer.test(model=lightning_model, dataloaders=test_loader)
@@ -376,7 +468,8 @@ if __name__ == '__main__':
             mae = predict[0]['test_mae']
             mae_list.append(mae)
 
-        visualize_results(mae_list)
+        visualize_results(mae_list, dataset_name)
+
 
 
 
