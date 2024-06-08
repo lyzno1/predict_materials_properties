@@ -22,6 +22,7 @@ parser = argparse.ArgumentParser(description='liu_attention')
 parser.add_argument('--batch_size', type=int, default=32, help='number of batch size')
 parser.add_argument('--gamma', type=float, default=1.9, help='Gamma value for RBF')
 parser.add_argument('--cutoff', type=int, default=3, help='Cutoff length for triplets')
+parser.add_argument('--sigma', type=float, default=1.0, help='Sigma value for RBF(angle)')
 # parser.add_argument("--max_length", type=int, default=96, help="Maximum length parameter")
 # parser.add_argument('--e', type=int, default=0, help='number of node embedding dim')
 
@@ -285,7 +286,7 @@ class AttentionStructureModel(nn.Module):
         super(AttentionStructureModel, self).__init__()
         self.embedding = nn.Embedding(119, embedding_dim)
         self.bond_expansion = BondExpansionRBF(num_features=num_features, gamma=args.gamma)
-        self.angle_expansion = AngleExpansionRBF(num_features=num_features, sigma=1.0)
+        self.angle_expansion = AngleExpansionRBF(num_features=num_features, sigma=args.sigma)
 
         self.gru_distances = nn.GRU(input_size=embedding_dim * 3, hidden_size=hidden_size, batch_first=True, num_layers=3, dropout=dropout)
         self.gru_angles = nn.GRU(input_size=num_features * 3, hidden_size=hidden_size, batch_first=True, num_layers=3, dropout=dropout)
@@ -411,12 +412,15 @@ def visualize_results(results_list, mb_dataset_name): # 可视化结果并保存
     print(f"Average MAE across all folds: {average_mae}")
 
     # 写入结果到文件
-    with open('add_angle.txt', 'a') as f:
+    with open('phonons_results.txt', 'a') as f:
         if f.tell() != 0:
             f.write('\n')
         for fold_num, mae in enumerate(results_list):
             f.write(f"Fold {fold_num}, MAE:{mae}\n")
-        f.write(f"{mb_dataset_name}, batch_size:{args.batch_size}, gamma:{args.gamma}, Average MAE: {average_mae}\n")
+        f.write(f"{mb_dataset_name}, batch_size:{args.batch_size}, sigma:{args.sigma}, Average MAE: {average_mae}\n")
+        f.write('\n')
+        f.write("-" * 100)
+        f.write('\n')
     results_list.clear()
 
 def set_random_seed(seed): # 固定随机种子
