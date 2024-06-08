@@ -20,7 +20,7 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 # bash megnet_orig.sh
 parser = argparse.ArgumentParser(description='liu_attention')
 parser.add_argument('--batch_size', type=int, default=32, help='number of batch size')
-parser.add_argument('--gamma', type=float, default=1.8, help='Gamma value for RBF')
+parser.add_argument('--gamma', type=float, default=1.9, help='Gamma value for RBF')
 parser.add_argument('--cutoff', type=int, default=3, help='Cutoff length for triplets')
 # parser.add_argument("--max_length", type=int, default=96, help="Maximum length parameter")
 # parser.add_argument('--e', type=int, default=0, help='number of node embedding dim')
@@ -238,6 +238,21 @@ class AngleExpansion(nn.Module):
         angle_features = torch.stack(angle_features, dim=-1)
         return angle_features
 
+class AngleExpansionRBF(nn.Module):
+    def __init__(self, num_features: int = 10, sigma: float = 0.1):
+        super(AngleExpansionRBF, self).__init__()
+        self.num_features = num_features
+        self.sigma = sigma
+        self.centers = torch.linspace(0, 1, num_features)
+
+    def forward(self, angles: torch.Tensor) -> torch.Tensor:
+        angle_features = []
+        for center in self.centers:
+            feature = torch.exp(-0.5 * ((angles - center) / self.sigma) ** 2)
+            angle_features.append(feature)
+        angle_features = torch.stack(angle_features, dim=-1)
+        return angle_features
+
 # 距离展开处理
 class BondExpansionRBF(nn.Module):
     def __init__(self, num_features: int = 10, gamma: float = 1.0):
@@ -270,7 +285,7 @@ class AttentionStructureModel(nn.Module):
         super(AttentionStructureModel, self).__init__()
         self.embedding = nn.Embedding(119, embedding_dim)
         self.bond_expansion = BondExpansionRBF(num_features=num_features, gamma=args.gamma)
-        self.angle_expansion = AngleExpansion(num_features=int(num_features))
+        self.angle_expansion = AngleExpansionRBF(num_features=num_features, sigma=1.0)
 
         self.gru_distances = nn.GRU(input_size=embedding_dim * 3, hidden_size=hidden_size, batch_first=True, num_layers=3, dropout=dropout)
         self.gru_angles = nn.GRU(input_size=num_features * 3, hidden_size=hidden_size, batch_first=True, num_layers=3, dropout=dropout)
@@ -282,7 +297,7 @@ class AttentionStructureModel(nn.Module):
 
         self.self_attention1 = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True, dropout=0.2)
         self.linear = nn.Linear(hidden_size * 2, 32)
-        self.relu2 = nn.ReLU()
+        self.relu2 = nn.SiLU()
         self.linear1 = nn.Linear(32, output_size)
         self.final_layers = nn.Sequential(
             nn.Linear(hidden_size * 2, 1024),
@@ -299,43 +314,40 @@ class AttentionStructureModel(nn.Module):
         self.layer_norm4 = nn.LayerNorm(hidden_size)
 
     def forward(self, distances, angles):
+        # 处理距离
         atom1 = self.embedding(distances[:, :, 0].to(torch.long))
         atom2 = self.embedding(distances[:, :, 1].to(torch.long))
         bond = self.bond_expansion(distances[:, :, 2].float())
         embedded_distances = torch.cat([atom1, atom2, bond], dim=-1)
 
+        gru_output_distances, _ = self.gru_distances(embedded_distances)
+        attention_output_distances, _ = self.self_attention(gru_output_distances, gru_output_distances,
+                                                            gru_output_distances)
+        attention_output_distances = self.layer_norm1(gru_output_distances + attention_output_distances)
+        feed_forward_output_distances = self.linear_feed(attention_output_distances)
+        feed_forward_output_distances = self.relu1(feed_forward_output_distances)
+        feed_forward_output_distances = self.linear_forward(feed_forward_output_distances)
+        attention_output_distances = self.layer_norm2(attention_output_distances + feed_forward_output_distances)
+        attention_output_distances, _ = self.self_attention1(attention_output_distances, attention_output_distances, attention_output_distances)
+
+        # 处理角度
         bond1 = self.bond_expansion(angles[:, :, 0].float())
         bond2 = self.bond_expansion(angles[:, :, 1].float())
         angle = self.angle_expansion(angles[:, :, 2].float())
         embedded_angles = torch.cat([bond1, bond2, angle], dim=-1)
 
-        gru_output_distances, _ = self.gru_distances(embedded_distances)
         gru_output_angles, _ = self.gru_angles(embedded_angles)
-
-        attention_output_distances, _ = self.self_attention(gru_output_distances, gru_output_distances, gru_output_distances)
         attention_output_angles, _ = self.self_attention(gru_output_angles, gru_output_angles, gru_output_angles)
-
-        attention_output_distances = self.layer_norm1(gru_output_distances + attention_output_distances)
         attention_output_angles = self.layer_norm1(gru_output_angles + attention_output_angles)
-
-        feed_forward_output_distances = self.linear_feed(attention_output_distances)
-        feed_forward_output_distances = self.relu1(feed_forward_output_distances)
-        feed_forward_output_distances = self.linear_forward(feed_forward_output_distances)
-
         # feed_forward_output_angles = self.linear_feed(attention_output_angles)
         # feed_forward_output_angles = self.relu1(feed_forward_output_angles)
         # feed_forward_output_angles = self.linear_forward(feed_forward_output_angles)
-
-        attention_output_distances = self.layer_norm2(attention_output_distances + feed_forward_output_distances)
         # attention_output_angles = self.layer_norm2(attention_output_angles + feed_forward_output_angles)
-
-        attention_output_distances, _ = self.self_attention1(attention_output_distances, attention_output_distances, attention_output_distances)
         # attention_output_angles, _ = self.self_attention1(attention_output_angles, attention_output_angles, attention_output_angles)
 
+        # 特征融合
         combined_output = torch.cat([attention_output_distances[:, -1, :], attention_output_angles[:, -1, :]], dim=-1)
-
         output = self.final_layers(combined_output)
-
         output = output.squeeze(1)
 
         return output
@@ -344,7 +356,7 @@ class AttentionStructureModel(nn.Module):
 class liu_attention_Lightning(pl.LightningModule):
     def __init__(self):
         super(liu_attention_Lightning, self).__init__()
-        self.model = AttentionStructureModel()
+        self.model = AttentionStructureModel(embedding_dim=10, num_features=10)
 
     def forward(self, distances, angles):
         distances = distances.float()
