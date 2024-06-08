@@ -269,7 +269,7 @@ class AttentionStructureModel(nn.Module):
     def __init__(self, embedding_dim=10, hidden_size=64, output_size=1, dropout=0.2, num_features=10):
         super(AttentionStructureModel, self).__init__()
         self.embedding = nn.Embedding(119, embedding_dim)
-        self.bond_expansion = BondExpansionRBF(num_features=num_features, gamma=1.0)
+        self.bond_expansion = BondExpansionRBF(num_features=num_features, gamma=args.gamma)
         self.angle_expansion = AngleExpansion(num_features=int(num_features))
 
         self.gru_distances = nn.GRU(input_size=embedding_dim * 3, hidden_size=hidden_size, batch_first=True, num_layers=3, dropout=dropout)
@@ -404,7 +404,7 @@ def visualize_results(results_list, mb_dataset_name): # 可视化结果并保存
             f.write('\n')
         for fold_num, mae in enumerate(results_list):
             f.write(f"Fold {fold_num}, MAE:{mae}\n")
-        f.write(f"{mb_dataset_name}, batch_size:{batch_size}, gamma:{args.gamma}, Average MAE: {average_mae}\n")
+        f.write(f"{mb_dataset_name}, batch_size:{args.batch_size}, gamma:{args.gamma}, Average MAE: {average_mae}\n")
     results_list.clear()
 
 def set_random_seed(seed): # 固定随机种子
