@@ -225,14 +225,19 @@ class Attention_structure_model(nn.Module):
 
         self.self_attention = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True)
 
-        self.linear_feed = nn.Linear(hidden_size, 1024)
-        self.relu1 = nn.ReLU()
-        self.linear_forward = nn.Linear(1024, hidden_size)
+        self.ffn = nn.Sequential(
+            nn.Linear(hidden_size, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, hidden_size)
+        )
 
         self.self_attention1 = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True, dropout=0.2)
-        self.linear = nn.Linear(hidden_size, 32)
-        self.relu2 = nn.ReLU()
-        self.linear1 = nn.Linear(32, output_size)
+        self.out_layer = nn.Sequential(
+        nn.Linear(hidden_size, 32),
+        nn.ReLU(),
+        nn.Linear(32, output_size),
+        )
+
         self.layer_norm1 = nn.LayerNorm(hidden_size)
         self.layer_norm2 = nn.LayerNorm(hidden_size)
         self.layer_norm3 = nn.LayerNorm(hidden_size)
@@ -252,17 +257,13 @@ class Attention_structure_model(nn.Module):
         attention_output, _ = self.self_attention(gru_output, gru_output, gru_output)
         attention_output = self.layer_norm1(gru_output + attention_output)
 
-        feed_forward_output = self.linear_feed(attention_output)
-        feed_forward_output = self.relu1(feed_forward_output)
-        feed_forward_output = self.linear_forward(feed_forward_output)
+        feed_forward_output = self.ffn(attention_output)
         feed_forward_output = self.layer_norm2(attention_output + feed_forward_output)
 
         attention_output, _ = self.self_attention(feed_forward_output, feed_forward_output, feed_forward_output)
         attention_output = self.layer_norm3(attention_output + attention_output)
 
-        feed_forward_output = self.linear_feed(attention_output)
-        feed_forward_output = self.relu1(feed_forward_output)
-        feed_forward_output = self.linear_forward(feed_forward_output)
+        feed_forward_output = self.ffn(attention_output)
         attention_output = self.layer_norm4(attention_output + feed_forward_output)
 
         # 调用 self-attention1
@@ -270,12 +271,9 @@ class Attention_structure_model(nn.Module):
 
         output = attention_output[:, -1, :]  # 选择最后一个时间步的隐藏状态
 
-        # 线性层
-        output = self.linear1(self.relu2(self.linear(output)))
+        output = self.out_layer(output)
 
-        output = output.squeeze(1)
-
-        return output
+        return output.squeeze(1)
 
 class liu_attention(nn.Module):
     def __init__(self, embedding_dim=10, hidden_size=64, output_size=1, dropout=0):
@@ -380,7 +378,7 @@ class EarlyStopping:
 
     def add_path(self):
         if self.path == None:
-            self.path = f'./pytorch_checkpoints/{self.dataset_name}-epoch-{self.epoch}-{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
+            self.path = f'./pytorch_checkpoints/{self.dataset_name}/epoch-{self.epoch}-{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
     def save_checkpoint(self, model):
@@ -390,7 +388,7 @@ class EarlyStopping:
 
     def _cleanup_checkpoints(self):
         """Deletes all but the top k models for the current run instance."""
-        checkpoints = glob.glob(f'./pytorch_checkpoints/{self.dataset_name}-epoch-*-{self.monitor}-*-{self.run_id}.pth')
+        checkpoints = glob.glob(f'./pytorch_checkpoints/{self.dataset_name}/epoch-*-{self.monitor}-*-{self.run_id}.pth')
         checkpoints.sort(key=os.path.getmtime)
         if len(checkpoints) > self.save_top_k:
             for ckpt in checkpoints[:-self.save_top_k]:
@@ -404,10 +402,10 @@ class EarlyStopping:
 
 
 
-def visualize_results(results_list):
+def visualize_results(results_list, dataset_name):
     print('-' * 100)
     console = Console()
-    table = Table(title="MAE Results")
+    table = Table(title=f"{dataset_name[9:]} Results")
     table.add_column("Fold", style="cyan")
     table.add_column("MAE", style="magenta")
 
@@ -418,6 +416,7 @@ def visualize_results(results_list):
     table.add_row("[bold]Average[/]", f"[bold magenta]{average_mae:.4f}[/]")
 
     console.print(table)
+    results_list.clear()
 
     # 写入结果到文件
     # with open('results.txt', 'a') as f:
@@ -442,7 +441,7 @@ if __name__ == '__main__':
     mb = MatbenchBenchmark(
         autoload=False,
         subset=[
-            # "matbench_jdft2d",  # 636
+            "matbench_jdft2d",  # 636
             "matbench_phonons",  # 1,265
             # "matbench_dielectric",  # 4,764
             # "matbench_log_gvrh",  # 10,987
@@ -463,7 +462,7 @@ if __name__ == '__main__':
         for fold in task.folds:
             train_inputs, train_outputs = task.get_train_and_val_data(fold)
 
-            max_length = TripletStats(train_inputs).get_average() * 2  # 用于截断/补齐
+            max_length = TripletStats(train_inputs).get_average()  # 用于截断/补齐
             x_input = torch.tensor(get_triplets(train_inputs, max_length)).to(device)  # 处理输入
 
             dataset = StructureDataset(x_input, train_outputs)
@@ -474,12 +473,12 @@ if __name__ == '__main__':
             val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=lambda x: x)
 
 
-            model = liu_attention(embedding_dim=10, hidden_size=64, output_size=1, dropout=0).to(device)
+            model = liu_attention(embedding_dim=10, hidden_size=128, output_size=1, dropout=0).to(device)
 
             # 初始化训练器
             trainer = liu_attention_trainer(model)
-            early_stopping = EarlyStopping(patience=300, min_delta=0.001, save_model=True, dataset_name=dataset_name)
-            num_epochs = 10
+            early_stopping = EarlyStopping(patience=300, min_delta=0.000, save_model=True, dataset_name=dataset_name)
+            num_epochs = 1000
 
             # 训练循环
             for epoch in range(num_epochs):
@@ -549,7 +548,7 @@ if __name__ == '__main__':
             text = Text(f'Test MAE: {avg_test_loss:.4f}', style="bold red")
             console.print(text)
 
-        visualize_results(mae_list)
+        visualize_results(mae_list, dataset_name)
 
 
 
