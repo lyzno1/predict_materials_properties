@@ -7,6 +7,7 @@ from pymatgen.core.periodic_table import Element
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data import Dataset
 import numpy as np
+import glob
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,6 +17,10 @@ import copy
 from collections import defaultdict
 import os
 import argparse
+import uuid
+from rich.console import Console
+from rich.text import Text
+from rich.table import Table
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 parser = argparse.ArgumentParser(description='liu_attention')
@@ -174,9 +179,6 @@ def get_triplets(structures, max_length):  # 处理成三元组
 
     return all_tensor_data
 
-
-
-
 class StructureDataset(Dataset):
     def __init__(self, structure, target):
         self.input = structure
@@ -246,18 +248,6 @@ class Attention_structer_model(nn.Module):
         # GRU 输入数据格式应为 (batch_size, seq_len, input_size)
         gru_output, _ = self.gru(embedded_data)
 
-        # # 调用 self-attention
-        # attention_output, _ = self.self_attention(gru_output, gru_output, gru_output)
-        # attention_output = self.linear_feed(attention_output)
-        # attention_output = self.relu1(attention_output)
-        # attention_output = self.linear_forward(attention_output)
-        # attention_output, _ = self.self_attention(attention_output, attention_output, attention_output)
-        # attention_output = self.linear_feed(attention_output)
-        # attention_output = self.relu1(attention_output)
-        # attention_output = self.linear_forward(attention_output)
-        # attention_output, _ = self.self_attention1(attention_output, attention_output, attention_output)
-
-
         # 调用 self-attention
         attention_output, _ = self.self_attention(gru_output, gru_output, gru_output)
         attention_output = self.layer_norm1(gru_output + attention_output)
@@ -265,9 +255,9 @@ class Attention_structer_model(nn.Module):
         feed_forward_output = self.linear_feed(attention_output)
         feed_forward_output = self.relu1(feed_forward_output)
         feed_forward_output = self.linear_forward(feed_forward_output)
-        attention_output = self.layer_norm2(attention_output + feed_forward_output)
+        feed_forward_output = self.layer_norm2(attention_output + feed_forward_output)
 
-        attention_output, _ = self.self_attention(attention_output, attention_output, attention_output)
+        attention_output, _ = self.self_attention(feed_forward_output, feed_forward_output, feed_forward_output)
         attention_output = self.layer_norm3(attention_output + attention_output)
 
         feed_forward_output = self.linear_feed(attention_output)
@@ -326,52 +316,104 @@ class liu_attention_trainer:
             test_loss = self.loss_fn(predict, label)
         return test_loss.item()
 
-
 class EarlyStopping:
-    def __init__(self, patience=100, min_delta=0, path='checkpoint.pth'):
+    def __init__(self, 
+                 patience: int = 100,
+                 min_delta: float = 0.00, 
+                 path: str = None, 
+                 epoch: int = None, 
+                 monitor: str = 'val_loss', 
+                 mode: str = 'min', 
+                 save_top_k: int = 1,
+                 dataset_name: str = None,
+                 save_model: bool = False):
         """
         Args:
             patience (int): How many epochs to wait after last time validation loss improved.
             min_delta (float): Minimum change in the monitored quantity to qualify as an improvement.
             path (str): Path to save the best model.
+            epoch (int): Current epoch number.
+            monitor (str): Quantity to be monitored. Default is 'val_loss'.
+            mode (str): One of {'min', 'max'}. In 'min' mode, training will stop when the quantity monitored has stopped decreasing.
+            save_top_k (int): Number of best models to save. Default is 1.
         """
         self.patience = patience
         self.min_delta = min_delta
-        self.path = path
-        self.best_loss = None
+        self.best_metrics = [float('inf')] if mode == 'min' else [float('-inf')]
         self.counter = 0
         self.early_stop = False
+        self.dataset_name = dataset_name
+        self.epoch = epoch
+        self.monitor = monitor
+        self.mode = mode
+        self.save_top_k = save_top_k
+        self.is_better = None
+        self.save_model = save_model
+        self.path = path
+        self.run_id = str(uuid.uuid4())  # Unique identifier for the training run
 
-    def __call__(self, val_loss, model):
-        if self.best_loss is None:
-            self.best_loss = val_loss
-            self.save_checkpoint(model)
-            print(f"Initial best validation loss set to {val_loss:.4f}")
-        elif val_loss < self.best_loss - self.min_delta:
-            self.best_loss = val_loss
-            self.counter = 0
-            self.save_checkpoint(model)
-            print(f"Validation loss improved to {val_loss:.4f}")
+        if self.mode == 'min':
+            self.is_better = lambda a, best: a < best
+        elif self.mode == 'max':
+            self.is_better = lambda a, best: a > best
+        else:
+            raise ValueError(f'Unknown mode: {self.mode}')
+
+    def __call__(self, val_metric, model):
+        if self.is_better(val_metric, self.best_metrics[-1] - self.min_delta):
+            self.best_metrics.append(val_metric)
+            if self.save_model:
+                self.save_checkpoint(model)
+            print(f"{self.monitor} improved to {val_metric:.4f}")
+            self._cleanup_checkpoints()
+            self.counter = 0 
         else:
             self.counter += 1
             if self.counter >= self.patience:
                 self.early_stop = True
 
-        print(f"Current best validation loss: {self.best_loss:.4f}")
+        best_metric = min(self.best_metrics) if self.mode == 'min' else max(self.best_metrics)
+        print(f"Current best {self.monitor}: {best_metric:.4f}")
+
+    def add_path(self):
+        self.path = f'./pytorch_checkpoints/{self.dataset_name}-epoch-{self.epoch}-{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
     def save_checkpoint(self, model):
-        """Saves model when validation loss improves."""
+        """Saves model when monitored metric improves."""
+        self.add_path()
         torch.save(model.state_dict(), self.path)
+
+    def _cleanup_checkpoints(self):
+        """Deletes all but the top k models for the current run instance."""
+        checkpoints = glob.glob(f'./pytorch_checkpoints/{self.dataset_name}-epoch-*-{self.monitor}-*-{self.run_id}.pth')
+        checkpoints.sort(key=os.path.getmtime)
+        if len(checkpoints) > self.save_top_k:
+            for ckpt in checkpoints[:-self.save_top_k]:
+                os.remove(ckpt)
+
+
 
     def load_checkpoint(self, model):
         """Loads the saved model."""
         model.load_state_dict(torch.load(self.path))
 
-def visualize_results(results_list): # 可视化结果并保存到文件中
+
+
+def visualize_results(results_list):
+    print('-' * 100)
+    console = Console()
+    table = Table(title="MAE Results")
+    table.add_column("Fold", style="cyan")
+    table.add_column("MAE", style="magenta")
+
     for i, mae in enumerate(results_list):
-        print(f"Fold {i} MAE: {mae}")
-    average_mae = sum(mae_list) / len(mae_list)
-    print(f"Average MAE across all folds: {average_mae}")
+        table.add_row('fold'+str(i), f"{mae:.4f}")
+
+    average_mae = sum(results_list) / len(results_list)
+    table.add_row("[bold]Average[/]", f"[bold magenta]{average_mae:.4f}[/]")
+
+    console.print(table)
 
     # 写入结果到文件
     # with open('results.txt', 'a') as f:
@@ -382,7 +424,6 @@ def visualize_results(results_list): # 可视化结果并保存到文件中
     #     f.write(f"batch_size:{batch_size}, Average MAE: {average_mae}\n")
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     init_seed = 42
@@ -414,6 +455,7 @@ if __name__ == '__main__':
 
     for task in mb.tasks:
         task.load()
+        dataset_name = task.dataset_name
         for fold in task.folds:
             train_inputs, train_outputs = task.get_train_and_val_data(fold)
 
@@ -421,26 +463,30 @@ if __name__ == '__main__':
             x_input = torch.tensor(get_triplets(train_inputs, max_length)).to(device)  # 处理输入
 
             dataset = StructureDataset(x_input, train_outputs)
-            train_data, val_data = train_test_split(dataset, test_size=0.2, random_state=42)
+            train_dataset, val_dataset = train_test_split(dataset, test_size=0.2, random_state=42)
             batch_size = args.batch_size
-            train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=0)
-            val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=0)
+
+            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=lambda x: x)
+            val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=lambda x: x)
+
 
             model = liu_attention(embedding_dim=10, hidden_size=64, output_size=1, dropout=0).to(device)
 
             # 初始化训练器
             trainer = liu_attention_trainer(model)
-            early_stopping = EarlyStopping(patience=300, min_delta=0.001, path=f'best_model_fold_{fold}.pth')
-            num_epochs = 1500
+            early_stopping = EarlyStopping(patience=300, min_delta=0.001, save_model=True, dataset_name=dataset_name)
+            num_epochs = 1000
 
             # 训练循环
             for epoch in range(num_epochs):
+                early_stopping.epoch = epoch
                 train_losses = []
                 model.train()
                 for batch in train_loader:
-                    x, label = batch['input'].to(device), batch['target'].float().to(device)
-                    train_loss = trainer.train_step(x, label)
-                    train_losses.append(train_loss)
+                    inputs = torch.stack([torch.tensor(item['input']).clone().detach().requires_grad_(True) for item in batch]).to(device)
+                    targets = torch.stack([torch.tensor(item['target']).clone().detach() for item in batch]).to(device)
+                    loss = trainer.train_step(inputs, targets)
+                    train_losses.append(loss)
 
                 # 计算平均训练损失
                 avg_train_loss = sum(train_losses) / len(train_losses)
@@ -450,8 +496,9 @@ if __name__ == '__main__':
                 model.eval()
                 with torch.no_grad():
                     for batch in val_loader:
-                        x, label = batch['input'].to(device), batch['target'].float().to(device)
-                        val_loss = trainer.val_step(x, label)
+                        inputs = torch.stack([torch.tensor(item['input']).clone().detach().requires_grad_(True) for item in batch]).to(device)
+                        targets = torch.stack([torch.tensor(item['target']).clone().detach() for item in batch]).to(device)
+                        val_loss = trainer.val_step(inputs, targets)
                         val_losses.append(val_loss)
 
                 # 计算平均验证损失
@@ -459,14 +506,24 @@ if __name__ == '__main__':
 
                 # 更新 EarlyStopping
                 early_stopping(avg_val_loss, model)
-                print(f'Epoch [{epoch + 1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}')
+                print('Epoch: [{epoch}][{num_epochs}]\t'
+                    'Loss {avg_train_loss:.4f}\t'
+                    'val_Loss {avg_val_loss:.4f}\n'.format(
+                    epoch=epoch + 1, num_epochs=num_epochs,
+                    avg_train_loss=avg_train_loss,
+                    avg_val_loss=avg_val_loss)
+                )
 
                 if early_stopping.early_stop:
-                    print("Early stopping")
+                    if epoch == num_epochs:
+                        print("max epoch reached")
+                    else:
+                        print("Early stopping")
                     break
 
             # 在训练结束后，加载最佳模型参数
-            early_stopping.load_checkpoint(model)
+            if early_stopping.save_model:
+                early_stopping.load_checkpoint(model)
 
             # 测试循环
             test_losses = []
@@ -484,7 +541,10 @@ if __name__ == '__main__':
             # 计算平均测试损失
             avg_test_loss = sum(test_losses) / len(test_losses)
             mae_list.append(avg_test_loss)
-            print(f'Test Loss: {avg_test_loss:.4f}')
+            console = Console()
+            text = Text(f'Test MAE: {avg_test_loss:.4f}', style="bold red")
+            console.print(text)
+
         visualize_results(mae_list)
 
 
