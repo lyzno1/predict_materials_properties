@@ -233,9 +233,9 @@ class Attention_structure_model(nn.Module):
 
         self.self_attention1 = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True, dropout=0.2)
         self.out_layer = nn.Sequential(
-        nn.Linear(hidden_size, 32),
-        nn.ReLU(),
-        nn.Linear(32, output_size),
+            nn.Linear(hidden_size, 32),
+            nn.ReLU(),
+            nn.Linear(32, output_size),
         )
 
         self.layer_norm1 = nn.LayerNorm(hidden_size)
@@ -288,7 +288,7 @@ class liu_attention(nn.Module):
 class liu_attention_trainer:
     def __init__(self, model):
         self.model = model
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-2)
         self.loss_fn = nn.L1Loss()
 
     def train_step(self, x, label):
@@ -319,7 +319,6 @@ class EarlyStopping:
                  patience: int = 100,
                  min_delta: float = 0.00, 
                  path: str = None, 
-                 epoch: int = None, 
                  monitor: str = 'val_loss', 
                  mode: str = 'min', 
                  save_top_k: int = 1,
@@ -331,7 +330,6 @@ class EarlyStopping:
             patience (int): How many epochs to wait after last time validation loss improved.
             min_delta (float): Minimum change in the monitored quantity to qualify as an improvement.
             path (str): Path to save the best model.
-            epoch (int): Current epoch number.
             monitor (str): Quantity to be monitored. Default is 'val_loss'.
             mode (str): One of {'min', 'max'}. In 'min' mode, training will stop when the quantity monitored has stopped decreasing.
             save_top_k (int): Number of best models to save. Default is 1.
@@ -344,14 +342,19 @@ class EarlyStopping:
         self.counter = 0
         self.early_stop = False
         self.dataset_name = dataset_name
-        self.epoch = epoch
         self.monitor = monitor
         self.mode = mode
         self.save_top_k = save_top_k
         self.is_better = None
+        self.sym = False
         self.save_model = save_model
-        self.path = path
         self.run_id = str(uuid.uuid4())  # Unique identifier for the training run
+
+        if path:
+            self.path = path
+            self.sym = False
+        else:
+            self.path = None
 
         if self.mode == 'min':
             self.is_better = lambda a, best: a < best
@@ -377,8 +380,11 @@ class EarlyStopping:
         print(f"Current best {self.monitor}: {best_metric:.4f}")
 
     def add_path(self):
-        if self.path == None:
-            self.path = f'./pytorch_checkpoints/{self.dataset_name}/epoch-{self.epoch}-{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
+        if self.path is None:
+            self.path = f'./pytorch_checkpoints/{self.dataset_name}/{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
+            self.sym = True
+        if self.sym:
+            self.path = f'./pytorch_checkpoints/{self.dataset_name}/{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
     def save_checkpoint(self, model):
@@ -388,17 +394,16 @@ class EarlyStopping:
 
     def _cleanup_checkpoints(self):
         """Deletes all but the top k models for the current run instance."""
-        checkpoints = glob.glob(f'./pytorch_checkpoints/{self.dataset_name}/epoch-*-{self.monitor}-*-{self.run_id}.pth')
+        checkpoints = glob.glob(f'./pytorch_checkpoints/{self.dataset_name}/{self.monitor}-*-{self.run_id}.pth')
         checkpoints.sort(key=os.path.getmtime)
         if len(checkpoints) > self.save_top_k:
             for ckpt in checkpoints[:-self.save_top_k]:
                 os.remove(ckpt)
 
-
-
     def load_checkpoint(self, model):
         """Loads the saved model."""
         model.load_state_dict(torch.load(self.path))
+
 
 
 
@@ -478,7 +483,7 @@ if __name__ == '__main__':
             # 初始化训练器
             trainer = liu_attention_trainer(model)
             early_stopping = EarlyStopping(patience=300, min_delta=0.000, save_model=True, dataset_name=dataset_name)
-            num_epochs = 1000
+            num_epochs = 10
 
             # 训练循环
             for epoch in range(num_epochs):
