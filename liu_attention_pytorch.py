@@ -326,7 +326,8 @@ class EarlyStopping:
                  mode: str = 'min', 
                  save_top_k: int = 1,
                  dataset_name: str = None,
-                 save_model: bool = False):
+                 save_model: bool = False
+                 ):
         """
         Args:
             patience (int): How many epochs to wait after last time validation loss improved.
@@ -336,6 +337,8 @@ class EarlyStopping:
             monitor (str): Quantity to be monitored. Default is 'val_loss'.
             mode (str): One of {'min', 'max'}. In 'min' mode, training will stop when the quantity monitored has stopped decreasing.
             save_top_k (int): Number of best models to save. Default is 1.
+            dataset_name (str): Name of the dataset. Default is None.
+            save_model (bool): Whether to save the model. Default is False.
         """
         self.patience = patience
         self.min_delta = min_delta
@@ -376,7 +379,8 @@ class EarlyStopping:
         print(f"Current best {self.monitor}: {best_metric:.4f}")
 
     def add_path(self):
-        self.path = f'./pytorch_checkpoints/{self.dataset_name}-epoch-{self.epoch}-{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
+        if self.path == None:
+            self.path = f'./pytorch_checkpoints/{self.dataset_name}-epoch-{self.epoch}-{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
     def save_checkpoint(self, model):
@@ -475,7 +479,7 @@ if __name__ == '__main__':
             # 初始化训练器
             trainer = liu_attention_trainer(model)
             early_stopping = EarlyStopping(patience=300, min_delta=0.001, save_model=True, dataset_name=dataset_name)
-            num_epochs = 1000
+            num_epochs = 10
 
             # 训练循环
             for epoch in range(num_epochs):
