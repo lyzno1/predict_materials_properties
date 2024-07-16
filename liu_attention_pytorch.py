@@ -6,6 +6,7 @@ from pymatgen.analysis.local_env import CrystalNN
 from pymatgen.core.periodic_table import Element
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data import Dataset
+import torch.multiprocessing as mp
 import numpy as np
 import glob
 import torch
@@ -194,7 +195,6 @@ class StructureDataset(Dataset):
         # 返回合金描述和目标值
         return {'input': input, 'target': target}
 
-# 距离bond expansion处理
 class BondExpansionRBF(nn.Module):
     def __init__(self, num_features: int = 10, gamma: float = 1.0):
         super(BondExpansionRBF, self).__init__()
@@ -214,9 +214,66 @@ class BondExpansionRBF(nn.Module):
 
         return rbf_values
 
-class Attention_structer_model(nn.Module):
+class ExponentialGatingGRUCell(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(ExponentialGatingGRUCell, self).__init__()
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.i2h = nn.Linear(input_dim, 3 * hidden_dim)
+        self.h2h = nn.Linear(hidden_dim, 3 * hidden_dim)
+    
+    def forward(self, x, hidden):
+        preact = self.i2h(x) + self.h2h(hidden)
+        
+        gates = preact[:, :2 * self.hidden_dim]
+        gates = torch.sigmoid(gates)
+        r_gate, z_gate = gates.chunk(2, 1)
+        
+        # Exponential gating
+        r_gate = torch.exp(-torch.exp(-r_gate))
+        z_gate = torch.exp(-torch.exp(-z_gate))
+        
+        h2h_output = self.h2h(hidden)
+        n_t_preact = preact[:, 2 * self.hidden_dim:] + r_gate * h2h_output[:, 2 * self.hidden_dim:]
+        
+        n_t = torch.tanh(n_t_preact)
+        h_t = (1 - z_gate) * n_t + z_gate * hidden
+        
+        return h_t
+    
+class GRUTransformer(nn.Module):
+    def __init__(self, input_dim, gru_hidden_dim, transformer_hidden_dim, n_heads, n_layers, output_dim, embedding_dim, dropout):
+        super(GRUTransformer, self).__init__()
+        self.embedding = nn.Embedding(119, embedding_dim)
+        self.bond_expansion = BondExpansionRBF(num_features=16, gamma=1.0)
+        self.gru_cell = ExponentialGatingGRUCell(input_dim, gru_hidden_dim)
+        self.transformer_layer = nn.TransformerEncoderLayer(d_model=gru_hidden_dim, nhead=n_heads, dim_feedforward=transformer_hidden_dim, 
+                                                            dropout=dropout, batch_first=True)
+        self.transformer = nn.TransformerEncoder(self.transformer_layer, num_layers=n_layers)
+        self.fc = nn.Linear(gru_hidden_dim, output_dim)
+
+    def forward(self, x):
+        atom1 = self.embedding(x[:, :, 0].to(torch.long))
+        atom2 = self.embedding(x[:, :, 1].to(torch.long))
+        bond = self.bond_expansion(x[:, :, 2].float())
+        x = torch.cat([atom1, atom2, bond], dim=-1)
+
+        batch_size, seq_len, _ = x.size()
+        h_t = torch.zeros(batch_size, self.gru_cell.hidden_dim).to(x.device)
+        
+        gru_out = []
+        for t in range(seq_len):
+            h_t = self.gru_cell(x[:, t, :], h_t)
+            gru_out.append(h_t.unsqueeze(1))
+        
+        gru_out = torch.cat(gru_out, dim=1)
+        transformer_out = self.transformer(gru_out)
+        output = self.fc(transformer_out[:, -1, :])
+        return output
+
+class Attention_structure_model(nn.Module):
     def __init__(self, embedding_dim=10, hidden_size=64, output_size=1, dropout=0.2):
-        super(Attention_structer_model, self).__init__()
+        super(Attention_structure_model, self).__init__()
         self.embedding = nn.Embedding(119, embedding_dim)
         self.bond_expansion = BondExpansionRBF(num_features=10, gamma=1.0)
 
@@ -225,14 +282,19 @@ class Attention_structer_model(nn.Module):
 
         self.self_attention = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True)
 
-        self.linear_feed = nn.Linear(hidden_size, 1024)
-        self.relu1 = nn.ReLU()
-        self.linear_forward = nn.Linear(1024, hidden_size)
+        self.ffn = nn.Sequential(
+            nn.Linear(hidden_size, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, hidden_size)
+        )
 
         self.self_attention1 = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=2, batch_first=True, dropout=0.2)
-        self.linear = nn.Linear(hidden_size, 32)
-        self.relu2 = nn.ReLU()
-        self.linear1 = nn.Linear(32, output_size)
+        self.out_layer = nn.Sequential(
+            nn.Linear(hidden_size, 32),
+            nn.ReLU(),
+            nn.Linear(32, output_size),
+        )
+
         self.layer_norm1 = nn.LayerNorm(hidden_size)
         self.layer_norm2 = nn.LayerNorm(hidden_size)
         self.layer_norm3 = nn.LayerNorm(hidden_size)
@@ -252,17 +314,13 @@ class Attention_structer_model(nn.Module):
         attention_output, _ = self.self_attention(gru_output, gru_output, gru_output)
         attention_output = self.layer_norm1(gru_output + attention_output)
 
-        feed_forward_output = self.linear_feed(attention_output)
-        feed_forward_output = self.relu1(feed_forward_output)
-        feed_forward_output = self.linear_forward(feed_forward_output)
+        feed_forward_output = self.ffn(attention_output)
         feed_forward_output = self.layer_norm2(attention_output + feed_forward_output)
 
         attention_output, _ = self.self_attention(feed_forward_output, feed_forward_output, feed_forward_output)
         attention_output = self.layer_norm3(attention_output + attention_output)
 
-        feed_forward_output = self.linear_feed(attention_output)
-        feed_forward_output = self.relu1(feed_forward_output)
-        feed_forward_output = self.linear_forward(feed_forward_output)
+        feed_forward_output = self.ffn(attention_output)
         attention_output = self.layer_norm4(attention_output + feed_forward_output)
 
         # 调用 self-attention1
@@ -270,19 +328,19 @@ class Attention_structer_model(nn.Module):
 
         output = attention_output[:, -1, :]  # 选择最后一个时间步的隐藏状态
 
-        # 线性层
-        output = self.linear1(self.relu2(self.linear(output)))
+        output = self.out_layer(output)
 
-        output = output.squeeze(1)
-
-        return output
+        return output.squeeze(1)
 
 class liu_attention(nn.Module):
-    def __init__(self, embedding_dim=10, hidden_size=64, output_size=1, dropout=0):
+    def __init__(self, embedding_dim=16, hidden_size=64, output_size=1, n_heads=2, n_layers=2, ffn_hidden=1024, dropout=0.2):
         super(liu_attention, self).__init__()
-        self.model = Attention_structer_model(embedding_dim=embedding_dim, hidden_size=hidden_size,
-                                              output_size=output_size, dropout=dropout)
+        # self.model = Attention_structure_model(embedding_dim=embedding_dim, hidden_size=hidden_size,
+        #                                       output_size=output_size, dropout=dropout)
 
+        self.model = GRUTransformer(input_dim=embedding_dim * 3, gru_hidden_dim=hidden_size, transformer_hidden_dim=ffn_hidden, 
+                                    output_dim=output_size, n_heads=n_heads, n_layers=n_layers, 
+                                    dropout=dropout, embedding_dim=embedding_dim)
     def forward(self, x):
         return self.model(x)
 
@@ -321,21 +379,22 @@ class EarlyStopping:
                  patience: int = 100,
                  min_delta: float = 0.00, 
                  path: str = None, 
-                 epoch: int = None, 
                  monitor: str = 'val_loss', 
                  mode: str = 'min', 
                  save_top_k: int = 1,
                  dataset_name: str = None,
-                 save_model: bool = False):
+                 save_model: bool = False
+                 ):
         """
         Args:
             patience (int): How many epochs to wait after last time validation loss improved.
             min_delta (float): Minimum change in the monitored quantity to qualify as an improvement.
             path (str): Path to save the best model.
-            epoch (int): Current epoch number.
             monitor (str): Quantity to be monitored. Default is 'val_loss'.
             mode (str): One of {'min', 'max'}. In 'min' mode, training will stop when the quantity monitored has stopped decreasing.
             save_top_k (int): Number of best models to save. Default is 1.
+            dataset_name (str): Name of the dataset. Default is None.
+            save_model (bool): Whether to save the model. Default is False.
         """
         self.patience = patience
         self.min_delta = min_delta
@@ -343,14 +402,19 @@ class EarlyStopping:
         self.counter = 0
         self.early_stop = False
         self.dataset_name = dataset_name
-        self.epoch = epoch
         self.monitor = monitor
         self.mode = mode
         self.save_top_k = save_top_k
         self.is_better = None
+        self.sym = False
         self.save_model = save_model
-        self.path = path
         self.run_id = str(uuid.uuid4())  # Unique identifier for the training run
+
+        if path:
+            self.path = path
+            self.sym = False
+        else:
+            self.path = None
 
         if self.mode == 'min':
             self.is_better = lambda a, best: a < best
@@ -376,7 +440,11 @@ class EarlyStopping:
         print(f"Current best {self.monitor}: {best_metric:.4f}")
 
     def add_path(self):
-        self.path = f'./pytorch_checkpoints/{self.dataset_name}-epoch-{self.epoch}-{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
+        if self.path is None:
+            self.path = f'./pytorch_checkpoints/{self.dataset_name}/{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
+            self.sym = True
+        if self.sym:
+            self.path = f'./pytorch_checkpoints/{self.dataset_name}/{self.monitor}-{self.best_metrics[-1]:.4f}-{self.run_id}.pth'
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
     def save_checkpoint(self, model):
@@ -386,13 +454,11 @@ class EarlyStopping:
 
     def _cleanup_checkpoints(self):
         """Deletes all but the top k models for the current run instance."""
-        checkpoints = glob.glob(f'./pytorch_checkpoints/{self.dataset_name}-epoch-*-{self.monitor}-*-{self.run_id}.pth')
+        checkpoints = glob.glob(f'./pytorch_checkpoints/{self.dataset_name}/{self.monitor}-*-{self.run_id}.pth')
         checkpoints.sort(key=os.path.getmtime)
         if len(checkpoints) > self.save_top_k:
             for ckpt in checkpoints[:-self.save_top_k]:
                 os.remove(ckpt)
-
-
 
     def load_checkpoint(self, model):
         """Loads the saved model."""
@@ -400,10 +466,11 @@ class EarlyStopping:
 
 
 
-def visualize_results(results_list):
+
+def visualize_results(results_list, dataset_name):
     print('-' * 100)
     console = Console()
-    table = Table(title="MAE Results")
+    table = Table(title=f"{dataset_name[9:]} Results")
     table.add_column("Fold", style="cyan")
     table.add_column("MAE", style="magenta")
 
@@ -416,16 +483,18 @@ def visualize_results(results_list):
     console.print(table)
 
     # 写入结果到文件
-    # with open('results.txt', 'a') as f:
-    #     if f.tell() != 0:
-    #         f.write('\n')
-    #     for fold_num, mae in enumerate(results_list):
-    #         f.write(f"batch_size:{batch_size}, Fold {fold_num}, MAE:{mae}\n")
-    #     f.write(f"batch_size:{batch_size}, Average MAE: {average_mae}\n")
+    with open('./mb_results/xgt.txt', 'a') as f:
+        if f.tell() != 0:
+            f.write('\n')
+        f.write(f"{dataset_name[9:]}, Average MAE: {average_mae}\n")
+        for fold_num, mae in enumerate(results_list):
+            f.write(f"Fold {fold_num}, MAE:{mae}\n")
+
+    results_list.clear()
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    mp.set_start_method('spawn')
     init_seed = 42
     torch.manual_seed(init_seed)
     torch.cuda.manual_seed(init_seed)
@@ -439,17 +508,17 @@ if __name__ == '__main__':
         autoload=False,
         subset=[
             # "matbench_jdft2d",  # 636
-            "matbench_phonons",  # 1,265
+            # "matbench_phonons",  # 1,265
             # "matbench_dielectric",  # 4,764
-            # "matbench_log_gvrh",  # 10,987
-            # "matbench_log_kvrh",  # 10,987
-            # "matbench_perovskites",  # 1w8
+            "matbench_log_gvrh",  # 10,987
+            "matbench_log_kvrh",  # 10,987
+            "matbench_perovskites",  # 1w8
             # "matbench_mp_gap",   # 回归 10.6w
             # "matbench_mp_e_form",  # 回归 13w
         ]
     )
     if torch.cuda.is_available():
-        torch.cuda.set_device(0)
+        torch.cuda.set_device(2)
     # 保存每个fold的MAE
     mae_list = []
 
@@ -459,22 +528,22 @@ if __name__ == '__main__':
         for fold in task.folds:
             train_inputs, train_outputs = task.get_train_and_val_data(fold)
 
-            max_length = TripletStats(train_inputs).get_average() * 2  # 用于截断/补齐
+            max_length = TripletStats(train_inputs).get_average()  # 用于截断/补齐
             x_input = torch.tensor(get_triplets(train_inputs, max_length)).to(device)  # 处理输入
 
             dataset = StructureDataset(x_input, train_outputs)
             train_dataset, val_dataset = train_test_split(dataset, test_size=0.2, random_state=42)
             batch_size = args.batch_size
 
-            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=lambda x: x)
-            val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=lambda x: x)
+            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=lambda x: x, num_workers=4)
+            val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, collate_fn=lambda x: x, num_workers=4)
 
 
-            model = liu_attention(embedding_dim=10, hidden_size=64, output_size=1, dropout=0).to(device)
+            model = liu_attention().to(device)
 
             # 初始化训练器
             trainer = liu_attention_trainer(model)
-            early_stopping = EarlyStopping(patience=300, min_delta=0.001, save_model=True, dataset_name=dataset_name)
+            early_stopping = EarlyStopping(patience=300, min_delta=0.000, save_model=True, dataset_name=dataset_name)
             num_epochs = 1000
 
             # 训练循环
@@ -483,8 +552,10 @@ if __name__ == '__main__':
                 train_losses = []
                 model.train()
                 for batch in train_loader:
-                    inputs = torch.stack([torch.tensor(item['input']).clone().detach().requires_grad_(True) for item in batch]).to(device)
+                    inputs = torch.stack([torch.tensor(item['input']).clone().detach().requires_grad_(True) for item in batch]).to(device).squeeze()
                     targets = torch.stack([torch.tensor(item['target']).clone().detach() for item in batch]).to(device)
+                    if targets.dim() == 1:
+                        targets = targets.view(-1, 1)
                     loss = trainer.train_step(inputs, targets)
                     train_losses.append(loss)
 
@@ -496,8 +567,10 @@ if __name__ == '__main__':
                 model.eval()
                 with torch.no_grad():
                     for batch in val_loader:
-                        inputs = torch.stack([torch.tensor(item['input']).clone().detach().requires_grad_(True) for item in batch]).to(device)
+                        inputs = torch.stack([torch.tensor(item['input']).clone().detach().requires_grad_(True) for item in batch]).to(device).squeeze()
                         targets = torch.stack([torch.tensor(item['target']).clone().detach() for item in batch]).to(device)
+                        if targets.dim() == 1:
+                            targets = targets.view(-1, 1)
                         val_loss = trainer.val_step(inputs, targets)
                         val_losses.append(val_loss)
 
@@ -528,14 +601,17 @@ if __name__ == '__main__':
             # 测试循环
             test_losses = []
             test_inputs, test_outputs = task.get_test_data(fold, include_target=True)
-            test_inputs = torch.tensor(get_triplets(test_inputs, max_length))
+            test_inputs = torch.tensor(get_triplets(test_inputs, max_length)).to(device)
             test_dataset = StructureDataset(test_inputs, test_outputs)
-            test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=0)
+            test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, collate_fn=lambda x: x, num_workers=4)
             model.eval()
             with torch.no_grad():
                 for batch in test_loader:
-                    x, label = batch['input'].to(device), batch['target'].float().to(device)
-                    test_loss = trainer.test_step(x, label)
+                    inputs = torch.stack([torch.tensor(item['input']).clone().detach().requires_grad_(True) for item in batch]).to(device).squeeze()
+                    targets = torch.stack([torch.tensor(item['target']).clone().detach() for item in batch]).to(device)
+                    if targets.dim() == 1:
+                        targets = targets.view(-1, 1)
+                    test_loss = trainer.test_step(inputs, targets)
                     test_losses.append(test_loss)
 
             # 计算平均测试损失
@@ -545,7 +621,7 @@ if __name__ == '__main__':
             text = Text(f'Test MAE: {avg_test_loss:.4f}', style="bold red")
             console.print(text)
 
-        visualize_results(mae_list)
+        visualize_results(mae_list, dataset_name)
 
 
 
