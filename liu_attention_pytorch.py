@@ -348,7 +348,7 @@ class liu_attention(nn.Module):
 class liu_attention_trainer:
     def __init__(self, model):
         self.model = model
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-2)
         self.loss_fn = nn.L1Loss()
 
     def train_step(self, x, label):
@@ -507,7 +507,7 @@ if __name__ == '__main__':
     mb = MatbenchBenchmark(
         autoload=False,
         subset=[
-            # "matbench_jdft2d",  # 636
+            "matbench_jdft2d",  # 636
             # "matbench_phonons",  # 1,265
             # "matbench_dielectric",  # 4,764
             "matbench_log_gvrh",  # 10,987
@@ -532,6 +532,7 @@ if __name__ == '__main__':
             x_input = torch.tensor(get_triplets(train_inputs, max_length)).to(device)  # 处理输入
 
             dataset = StructureDataset(x_input, train_outputs)
+            train_dataset, val_dataset = train_test_split(dataset, test_size=0.2, random_state=42)
             train_dataset, val_dataset = train_test_split(dataset, test_size=0.2, random_state=42)
             batch_size = args.batch_size
 
