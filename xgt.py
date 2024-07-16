@@ -27,7 +27,9 @@ from collections import defaultdict
 import os
 import argparse
 
-device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+# from torch_geometric.nn import SchNet
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def get_atom_distance(structure, atom_i, atom_j):
     """
@@ -128,7 +130,7 @@ class BondExpansionRBF(nn.Module):
         rbf_values = torch.exp(-self.gamma * distance_to_centers ** 2).squeeze()
 
         return rbf_values
-
+    
 class ExponentialGatingGRUCell(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(ExponentialGatingGRUCell, self).__init__()
@@ -155,15 +157,32 @@ class ExponentialGatingGRUCell(nn.Module):
         h_t = (1 - z_gate) * n_t + z_gate * hidden
         
         return h_t
-    
+  
+class MultiLayerGRU(nn.Module):
+    def __init__(self, input_dim, hidden_dim, num_layers):
+        super(MultiLayerGRU, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.gru_cells = nn.ModuleList([ExponentialGatingGRUCell(input_dim if i == 0 else hidden_dim, hidden_dim) for i in range(num_layers)])
+
+    def forward(self, x):
+        batch_size, seq_len, _ = x.size()
+        h_t = [torch.zeros(batch_size, self.hidden_dim).to(x.device) for _ in range(self.num_layers)]
+        
+        for t in range(seq_len):
+            for i, gru_cell in enumerate(self.gru_cells):
+                h_t[i] = gru_cell(x[:, t, :] if i == 0 else h_t[i-1], h_t[i])
+        
+        return h_t[-1].unsqueeze(1)
+      
 class GRUTransformer(nn.Module):
-    def __init__(self, input_dim, gru_hidden_dim, n_heads, n_layers, 
-                 ffn_hidden, output_dim, dropout, embedding_dim, num_features, gamma):
+    def __init__(self, input_dim, gru_hidden_dim, n_heads, n_layers, activation,
+                 ffn_hidden, output_dim, dropout, embedding_dim, num_features, gamma, num_gru_layers):
         super(GRUTransformer, self).__init__()
         self.embedding = nn.Embedding(119, embedding_dim)
         self.bond_expansion = BondExpansionRBF(num_features=num_features, gamma=gamma)
-        self.gru_cell = ExponentialGatingGRUCell(input_dim, gru_hidden_dim)
-        self.transformer_layer = nn.TransformerEncoderLayer(d_model=gru_hidden_dim, nhead=n_heads, 
+        self.multi_layer_gru = MultiLayerGRU(input_dim, gru_hidden_dim, num_gru_layers)
+        self.transformer_layer = nn.TransformerEncoderLayer(d_model=gru_hidden_dim, nhead=n_heads, activation=activation,
                                                             dim_feedforward=ffn_hidden, dropout=dropout, batch_first=True)
         self.transformer = nn.TransformerEncoder(self.transformer_layer, num_layers=n_layers)
         self.dropout = nn.Dropout(dropout)
@@ -179,30 +198,25 @@ class GRUTransformer(nn.Module):
         bond = self.bond_expansion(x[:, :, 2].float())
 
         x = torch.cat([atom1, atom2, bond], dim=-1)
-
-        batch_size, seq_len, _ = x.size()
-        h_t = torch.zeros(batch_size, self.gru_cell.hidden_dim).to(x.device)
         
-        gru_out = []
-        for t in range(seq_len):
-            h_t = self.gru_cell(x[:, t, :], h_t)
-            gru_out.append(h_t.unsqueeze(1))
-        
-        gru_out = torch.cat(gru_out, dim=1)
+        gru_out = self.multi_layer_gru(x)
         transformer_out = self.transformer(gru_out)
         transformer_out = self.dropout(transformer_out)
         output = self.fc(transformer_out[:, -1, :])
         return output
-    
+
 class Predictor(pl.LightningModule):
     def __init__(self, hparams):
         super(Predictor, self).__init__()
         self.save_hyperparameters(hparams)
+        activation_function = getattr(F, hparams.activation)
         self.model = GRUTransformer(input_dim=hparams.embedding_dim * 2 + hparams.num_features, 
                                     gru_hidden_dim=hparams.hidden_dim, 
                                     ffn_hidden= hparams.ffn_hidden,
                                     n_heads=hparams.n_heads, 
                                     n_layers=hparams.n_layers,
+                                    activation=activation_function,
+                                    num_gru_layers=hparams.gru_layers,
                                     dropout=hparams.dropout,
                                     embedding_dim=hparams.embedding_dim, 
                                     num_features=hparams.num_features, 
@@ -280,10 +294,10 @@ def visualize_results(results_list, dataset_name):
     # 写入结果到文件
     with open('./mb_results/xgtpl.txt', 'a') as f:
         if f.tell() != 0:
-            f.write('\n')
+            f.write('\n' + '*' * 100 + '\n')
         f.write(f"{dataset_name[9:]}, Average MAE: {average_mae}\n")
-        for fold_num, mae in enumerate(results_list):
-            f.write(f"Fold {fold_num}, MAE:{mae}\n")
+        # for fold_num, mae in enumerate(results_list):
+        #     f.write(f"Fold {fold_num}, MAE:{mae}\n")
 
     results_list.clear()
 
@@ -292,8 +306,10 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_dim', type=int, default=64, help='hidden dimension')
     parser.add_argument('--n_heads', type=int, default=2, help='number of heads in multi-head attention')
     parser.add_argument('--n_layers', type=int, default=2, help='number of layers in transformer')
+    parser.add_argument('--activation', type=str, default='silu', help='activation function of Transformer ffn')
     parser.add_argument('--ffn_hidden', type=int, default=1024, help='hidden dimension in feed-forward network')
-    parser.add_argument('--dropout', type=float, default=0.2, help='dropout rate')
+    parser.add_argument('--gru_layers', type=int, default=4, help='number of layers in GRU')
+    parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
     parser.add_argument('--output_dim', type=int, default=1, help='output dimension')
     parser.add_argument('--embedding_dim', type=int, default=10, help='embedding dimension')
     parser.add_argument('--num_features', type=int, default=10, help='number of features')
@@ -347,7 +363,7 @@ if __name__ == '__main__':
             early_stop_callback = DistributedEarlyStopping(monitor="val_loss", min_delta=0.00, patience=300, verbose=True, mode="min")
             checkpoint_callback = DistributedModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1)
             progress_bar = RichProgressBar()
-            callbacks=[early_stop_callback,checkpoint_callback,progress_bar]
+            callbacks=[checkpoint_callback, progress_bar]
 
             trainer = Trainer(max_epochs=1000,
                                  callbacks=callbacks,
